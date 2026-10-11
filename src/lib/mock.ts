@@ -14,3 +14,8 @@ export const inRange = (k: ParamKey, v: number | null | undefined) => {
 };
 export const chems = ["Cloro granulado", "Clarificante", "Barrilha", "Algicida", "Redutor de pH", "Sulfato de alumínio"];
 export const tasks = ["Peneiramento", "Escovação", "Aspiração ao fundo", "Limpeza de skimmer/pré-filtro", "Retrolavagem"];
+/** Volume em m³ = comprimento × largura × profundidade média (metros), 1 casa decimal. */
+export function poolVolume(c: number, l: number, p: number) {
+  if (!(c > 0 && l > 0 && p > 0)) return null;
+  return Math.round(c * l * p * 10) / 10;
+}

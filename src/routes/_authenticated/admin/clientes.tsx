@@ -7,6 +7,7 @@ import { z } from "zod";
 import { AdminShell, Empty, inputCls } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { createAccount } from "@/lib/users.functions";
+import { poolVolume } from "@/lib/mock";
 import { MapPin, Phone, Plus, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/clientes")({
@@ -26,6 +27,9 @@ const clientSchema = z.object({
 function Clientes() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [dims, setDims] = useState({ c: "", l: "", p: "" });
+  const toNum = (x: string) => parseFloat(x.replace(",", "."));
+  const autoVol = poolVolume(toNum(dims.c), toNum(dims.l), toNum(dims.p));
   const [loginFor, setLoginFor] = useState<string | null>(null);
   const create = useServerFn(createAccount);
 
@@ -41,7 +45,7 @@ function Clientes() {
       const { error: e2 } = await supabase.from("swimming_pools").insert({ client_id: c.id, coating: v.coating, dimensions: v.dimensions || null, volume_m3: v.volume });
       if (e2) throw e2;
     },
-    onSuccess: () => { toast.success("Cliente cadastrado"); setOpen(false); qc.invalidateQueries({ queryKey: ["clients"] }); },
+    onSuccess: () => { toast.success("Cliente cadastrado"); setOpen(false); setDims({ c: "", l: "", p: "" }); qc.invalidateQueries({ queryKey: ["clients"] }); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -58,15 +62,27 @@ function Clientes() {
         <form className="glass p-5 mb-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3" onSubmit={(e) => {
           e.preventDefault();
           const r = clientSchema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
-          if (!r.success) { toast.error("Confira os campos do formulário."); return; }
+          if (!r.success || autoVol == null) { toast.error("Confira os campos e as medidas da piscina."); return; }
           addClient.mutate(r.data);
         }}>
           <input name="name" required maxLength={100} placeholder="Nome" className={inputCls} />
           <input name="phone" required maxLength={20} placeholder="WhatsApp com DDD (ex: 11987654321)" className={inputCls} />
           <input name="address" required maxLength={255} placeholder="Endereço" className={inputCls} />
           <select name="coating" className={inputCls}>{["Vinil", "Fibra", "Pastilha", "Azulejo", "Concreto"].map((t) => <option key={t}>{t}</option>)}</select>
-          <input name="dimensions" maxLength={60} placeholder="Dimensões (ex: 8 x 4 x 1,4 m)" className={inputCls} />
-          <input name="volume" type="number" step="0.1" required placeholder="Volume (m³)" className={inputCls} />
+          <div className="sm:col-span-2 lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+            {([["c", "Comprimento (m)"], ["l", "Largura (m)"], ["p", "Profundidade média (m)"]] as const).map(([k, label]) => (
+              <label key={k} className="text-xs text-muted-foreground space-y-1">
+                <span>{label}</span>
+                <input inputMode="decimal" required value={dims[k]} onChange={(e) => setDims({ ...dims, [k]: e.target.value })} placeholder="0,0" className={inputCls} />
+              </label>
+            ))}
+            <div className="rounded-lg bg-aqua text-abyss px-3 py-2.5 font-semibold text-center">
+              <div className="text-xs font-medium">Volume calculado</div>
+              {autoVol != null ? `${autoVol.toLocaleString("pt-BR")} m³` : "—"}
+            </div>
+            <input type="hidden" name="dimensions" value={autoVol != null ? `${dims.c} x ${dims.l} x ${dims.p} m` : ""} />
+            <input type="hidden" name="volume" value={autoVol ?? ""} />
+          </div>
           <button disabled={addClient.isPending} className="btn-primary py-2.5 sm:col-span-2 lg:col-span-3">Salvar</button>
         </form>
       )}

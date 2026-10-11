@@ -14,3 +14,9 @@ describe("faixas ideais da água", () => {
     expect(inRange("alkalinity", null)).toBeNull();
   });
 });
+
+import { poolVolume } from "@/lib/mock";
+describe("cálculo de volume", () => {
+  it("8 x 4 x 1,4 m = 44,8 m³", () => expect(poolVolume(8, 4, 1.4)).toBe(44.8));
+  it("medida faltando não calcula", () => expect(poolVolume(8, 0, 1.4)).toBeNull());
+});
