@@ -18,10 +18,10 @@ function Agenda() {
   const start = startOfDay();
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const { data: team = [] } = useQuery(techsQuery);
-  const { data: pools = [] } = useQuery({ queryKey: ["pools"], queryFn: async () => (await supabase.from("swimming_pools").select("id, client:clients(name)")).data ?? [] });
+  const { data: pools = [] } = useQuery({ queryKey: ["pools"], queryFn: async () => (await supabase.from("swimming_pools").select("id, name, address, client:clients(name)").order("created_at")).data ?? [] });
   const { data: sched = [] } = useQuery({
     queryKey: ["agenda"],
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, technician_id, pool:swimming_pools(client:clients(name))").gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, technician_id, pool:swimming_pools(name, address, client:clients(name))").gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
   });
 
   useEffect(() => {
@@ -50,7 +50,7 @@ function Agenda() {
           e.preventDefault(); const f = new FormData(e.currentTarget);
           add.mutate({ pool_id: String(f.get("pool")), technician_id: String(f.get("tech")), scheduled_at: new Date(String(f.get("when"))).toISOString() });
         }}>
-          <select name="pool" required className={inputCls}><option value="">Cliente / piscina</option>{pools.map((p) => <option key={p.id} value={p.id}>{p.client?.name}</option>)}</select>
+          <select name="pool" required className={inputCls}><option value="">Cliente / piscina</option>{pools.map((p) => <option key={p.id} value={p.id}>{p.client?.name}{p.name || p.address ? ` — ${p.name || p.address}` : ""}</option>)}</select>
           <select name="tech" required className={inputCls}><option value="">Técnico</option>{techs.map((t) => <option key={t.id} value={t.id}>{t.full_name || t.email}</option>)}</select>
           <input name="when" type="datetime-local" required className={inputCls} />
           <button disabled={add.isPending} className="btn-primary py-2.5">Salvar</button>
@@ -68,7 +68,7 @@ function Agenda() {
                   <div key={i} className="border-t p-1.5 space-y-1.5 min-h-20">
                     {sched.filter((s) => s.technician_id === t.id && sameDay(d, s.scheduled_at)).map((v) => (
                       <div key={v.id} className="bg-ice rounded-lg p-2 text-xs border group">
-                        <div className="font-semibold flex justify-between gap-1">{fmtTime(v.scheduled_at)} · {v.pool?.client?.name}
+                        <div className="font-semibold flex justify-between gap-1">{fmtTime(v.scheduled_at)} · {v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}
                           {v.status === "agendada" && <button onClick={() => del.mutate(v.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground" aria-label="Remover"><Trash2 className="size-3" /></button>}
                         </div>
                         <div className="mt-1"><StatusBadge s={v.status} /></div>
