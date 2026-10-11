@@ -19,3 +19,15 @@ export function poolVolume(c: number, l: number, p: number) {
   if (!(c > 0 && l > 0 && p > 0)) return null;
   return Math.round(c * l * p * 10) / 10;
 }
+
+/** Gera as datas das visitas recorrentes: dias da semana (0=dom..6=sáb), horário "HH:MM", a partir de `start` por `weeks` semanas. */
+export function recurringDates(start: Date, weekdays: number[], time: string, weeks: number) {
+  const [h, m] = time.split(":").map(Number);
+  const out: Date[] = [];
+  const first = new Date(start); first.setHours(0, 0, 0, 0);
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(first); d.setDate(first.getDate() + i);
+    if (weekdays.includes(d.getDay())) { d.setHours(h ?? 0, m ?? 0, 0, 0); out.push(d); }
+  }
+  return out;
+}
