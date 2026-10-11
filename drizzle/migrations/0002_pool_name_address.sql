@@ -1,0 +1,1 @@
+alter table public.swimming_pools add column if not exists name text, add column if not exists address text;

@@ -15,6 +15,13 @@
       "when": 1791738234972,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791739260903,
+      "tag": "0002_pool_name_address",
+      "breakpoints": true
     }
   ]
 }
