@@ -26,6 +26,7 @@ function Visita() {
   const [done, setDone] = useState<string[]>([]);
   const [files, setFiles] = useState<{ antes?: File; depois?: File }>({});
   const [saving, setSaving] = useState(false);
+  const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
 
   useEffect(() => {
     if (v?.status === "agendada") {
@@ -41,7 +42,7 @@ function Visita() {
   const client = v.pool?.client;
 
   const summary = [
-    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${new Date().toLocaleDateString("pt-BR")}`, ``,
+    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${new Date().toLocaleDateString("pt-BR")} às ${visitTime}`, ``,
     `*Parâmetros da água*`, ...params.map((p) => { const s = inRange(p.key, num(p.key)); return `• ${p.label}: ${vals[p.key] || "-"} ${p.unit} ${s ? "✅" : s === false ? "⚠️" : ""}`; }),
     ``, `*Produtos aplicados*`, ...Object.entries(used).filter(([, q]) => q).map(([c, q]) => `• ${c}: ${q}`), ``,
     `*Serviços realizados*`, ...done.map((t) => `✔ ${t}`), ``, `Sua piscina está cristalina! 💧`,
@@ -66,7 +67,9 @@ function Visita() {
         photo_before: before, photo_after: after,
       }, { onConflict: "schedule_id" });
       if (error) throw error;
-      await supabase.from("schedules").update({ status: "concluida" }).eq("id", id);
+      const [hh, mm] = visitTime.split(":").map(Number);
+      const at = new Date(); at.setHours(hh ?? 0, mm ?? 0, 0, 0);
+      await supabase.from("schedules").update({ status: "concluida", visited_at: at.toISOString() }).eq("id", id);
       const url = `https://wa.me/55${(client?.phone ?? "").replace(/\D/g, "").replace(/^55/, "")}?text=${encodeURIComponent(summary)}`;
       if (win) win.location.href = url; else window.open(url, "_blank");
       toast.success("Visita encerrada!");
@@ -83,6 +86,13 @@ function Visita() {
     <div className="max-w-lg mx-auto p-5 pb-28 space-y-4">
       <Link to="/tecnico" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />Voltar</Link>
       <div><h1 className="text-2xl font-bold">{client?.name}</h1><p className="text-sm text-muted-foreground">{v.pool?.name ? `${v.pool.name} · ` : ""}{v.pool?.coating} · {v.pool?.volume_m3} m³</p></div>
+
+      <section className={card}>
+        <label className="flex items-center justify-between gap-3">
+          <span className="font-semibold">Horário da visita</span>
+          <input type="time" required value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="rounded-lg border bg-ice px-3 py-2 text-lg font-bold" />
+        </label>
+      </section>
 
       <section className={card}>
         <h2 className="font-semibold">Parâmetros da água</h2>

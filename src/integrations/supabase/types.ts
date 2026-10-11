@@ -77,26 +77,35 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          original_date: string | null
           pool_id: string
           scheduled_at: string
+          skip_note: string | null
           status: Database["public"]["Enums"]["visit_status"]
           technician_id: string | null
+          visited_at: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          original_date?: string | null
           pool_id: string
           scheduled_at: string
+          skip_note?: string | null
           status?: Database["public"]["Enums"]["visit_status"]
           technician_id?: string | null
+          visited_at?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          original_date?: string | null
           pool_id?: string
           scheduled_at?: string
+          skip_note?: string | null
           status?: Database["public"]["Enums"]["visit_status"]
           technician_id?: string | null
+          visited_at?: string | null
         }
         Relationships: [
           {

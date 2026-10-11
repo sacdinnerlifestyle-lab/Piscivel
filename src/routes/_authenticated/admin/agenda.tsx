@@ -24,7 +24,7 @@ function Agenda() {
   const { data: pools = [] } = useQuery({ queryKey: ["pools"], queryFn: async () => (await supabase.from("swimming_pools").select("id, name, address, client:clients(name)").order("created_at")).data ?? [] });
   const { data: sched = [] } = useQuery({
     queryKey: ["agenda"],
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, technician_id, pool:swimming_pools(name, address, client:clients(name))").gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician_id, pool:swimming_pools(name, address, client:clients(name))").gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
   });
 
   useEffect(() => {
@@ -56,11 +56,11 @@ function Agenda() {
       {open && (
         <form className="glass p-5 mb-6 grid sm:grid-cols-4 gap-3" onSubmit={(e) => {
           e.preventDefault(); const f = new FormData(e.currentTarget);
-          add.mutate([{ pool_id: String(f.get("pool")), technician_id: String(f.get("tech")), scheduled_at: new Date(String(f.get("when"))).toISOString() }]);
+          add.mutate([{ pool_id: String(f.get("pool")), technician_id: String(f.get("tech")), scheduled_at: new Date(`${f.get("when")}T12:00`).toISOString() }]);
         }}>
           <select name="pool" required className={inputCls}><option value="">Cliente / piscina</option>{poolOptions}</select>
           <select name="tech" required className={inputCls}><option value="">Técnico</option>{techOptions}</select>
-          <input name="when" type="datetime-local" required className={inputCls} />
+          <input name="when" type="date" required className={inputCls} />
           <button disabled={add.isPending} className="btn-primary py-2.5">Salvar</button>
         </form>
       )}
@@ -70,7 +70,7 @@ function Agenda() {
           const poolIds = f.getAll("pools").map(String);
           if (!poolIds.length) { toast.error("Selecione ao menos uma piscina."); return; }
           if (!weekdays.length) { toast.error("Escolha os dias da semana."); return; }
-          const dates = recurringDates(new Date(`${f.get("start")}T00:00`), weekdays, String(f.get("time")), Number(f.get("weeks")));
+          const dates = recurringDates(new Date(`${f.get("start")}T00:00`), weekdays, "12:00", Number(f.get("weeks")));
           const rows = poolIds.flatMap((pool_id) => dates.map((d) => ({ pool_id, technician_id: String(f.get("tech")), scheduled_at: d.toISOString() })));
           if (rows.length > 500) { toast.error("Muitas visitas de uma vez (máx. 500). Reduza as semanas."); return; }
           add.mutate(rows);
@@ -94,10 +94,9 @@ function Agenda() {
               ); })}
             </div>
           </div>
-          <div className="grid sm:grid-cols-4 gap-3">
+          <div className="grid sm:grid-cols-3 gap-3">
             <label className="text-xs text-muted-foreground space-y-1"><span>Técnico</span><select name="tech" required className={inputCls}><option value="">Selecione</option>{techOptions}</select></label>
-            <label className="text-xs text-muted-foreground space-y-1"><span>Horário</span><input name="time" type="time" required defaultValue="09:00" className={inputCls} /></label>
-            <label className="text-xs text-muted-foreground space-y-1"><span>Começa em</span><input name="start" type="date" required defaultValue={new Date().toLocaleDateString("en-CA")} className={inputCls} /></label>
+                        <label className="text-xs text-muted-foreground space-y-1"><span>Começa em</span><input name="start" type="date" required defaultValue={new Date().toLocaleDateString("en-CA")} className={inputCls} /></label>
             <label className="text-xs text-muted-foreground space-y-1"><span>Repetir por</span>
               <select name="weeks" defaultValue="4" className={inputCls}>{[1, 2, 4, 8, 12, 26].map((w) => <option key={w} value={w}>{w} semana{w > 1 ? "s" : ""}</option>)}</select>
             </label>
@@ -117,10 +116,11 @@ function Agenda() {
                   <div key={i} className="border-t p-1.5 space-y-1.5 min-h-20">
                     {sched.filter((s) => s.technician_id === t.id && sameDay(d, s.scheduled_at)).map((v) => (
                       <div key={v.id} className="bg-ice rounded-lg p-2 text-xs border group">
-                        <div className="font-semibold flex justify-between gap-1">{fmtTime(v.scheduled_at)} · {v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}
+                        <div className="font-semibold flex justify-between gap-1">{v.visited_at ? `${fmtTime(v.visited_at)} · ` : ""}{v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}
                           {v.status === "agendada" && <button onClick={() => del.mutate(v.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground" aria-label="Remover"><Trash2 className="size-3" /></button>}
                         </div>
                         <div className="mt-1"><StatusBadge s={v.status} /></div>
+                        {v.skip_note && <div className="mt-1 text-[11px] text-petrol">Remarcada: {v.skip_note}</div>}
                       </div>
                     ))}
                   </div>

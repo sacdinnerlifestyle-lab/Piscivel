@@ -1,0 +1,1 @@
+alter table public.schedules add column if not exists visited_at timestamptz, add column if not exists skip_note text, add column if not exists original_date timestamptz;
