@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminAgendaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin/clientes'
 import { Route as AuthenticatedAdminEquipeRouteImport } from './routes/_authenticated/admin/equipe'
 import { Route as AuthenticatedTecnicoIndexRouteImport } from './routes/_authenticated/tecnico/index'
+import { Route as AuthenticatedTecnicoSemanaRouteImport } from './routes/_authenticated/tecnico/semana'
 import { Route as AuthenticatedTecnicoVisitaIdRouteImport } from './routes/_authenticated/tecnico/visita.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -81,6 +82,12 @@ const AuthenticatedTecnicoIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedTecnicoRouteRoute,
   } as any)
+const AuthenticatedTecnicoSemanaRoute =
+  AuthenticatedTecnicoSemanaRouteImport.update({
+    id: '/semana',
+    path: '/semana',
+    getParentRoute: () => AuthenticatedTecnicoRouteRoute,
+  } as any)
 const AuthenticatedTecnicoVisitaIdRoute =
   AuthenticatedTecnicoVisitaIdRouteImport.update({
     id: '/visita/$id',
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/admin/clientes': typeof AuthenticatedAdminClientesRoute
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/tecnico/': typeof AuthenticatedTecnicoIndexRoute
   '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/admin/clientes': typeof AuthenticatedAdminClientesRoute
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/tecnico': typeof AuthenticatedTecnicoIndexRoute
   '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/_authenticated/admin/clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/_authenticated/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/tecnico/': typeof AuthenticatedTecnicoIndexRoute
   '/_authenticated/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/admin/agenda'
     | '/admin/clientes'
     | '/admin/equipe'
+    | '/tecnico/semana'
     | '/admin/'
     | '/tecnico/'
     | '/tecnico/visita/$id'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/admin/agenda'
     | '/admin/clientes'
     | '/admin/equipe'
+    | '/tecnico/semana'
     | '/admin'
     | '/tecnico'
     | '/tecnico/visita/$id'
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/agenda'
     | '/_authenticated/admin/clientes'
     | '/_authenticated/admin/equipe'
+    | '/_authenticated/tecnico/semana'
     | '/_authenticated/admin/'
     | '/_authenticated/tecnico/'
     | '/_authenticated/tecnico/visita/$id'
@@ -253,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTecnicoIndexRouteImport
       parentRoute: typeof AuthenticatedTecnicoRouteRoute
     }
+    '/_authenticated/tecnico/semana': {
+      id: '/_authenticated/tecnico/semana'
+      path: '/semana'
+      fullPath: '/tecnico/semana'
+      preLoaderRoute: typeof AuthenticatedTecnicoSemanaRouteImport
+      parentRoute: typeof AuthenticatedTecnicoRouteRoute
+    }
     '/_authenticated/tecnico/visita/$id': {
       id: '/_authenticated/tecnico/visita/$id'
       path: '/visita/$id'
@@ -284,12 +304,14 @@ const AuthenticatedAdminRouteRouteWithChildren =
   )
 
 interface AuthenticatedTecnicoRouteRouteChildren {
+  AuthenticatedTecnicoSemanaRoute: typeof AuthenticatedTecnicoSemanaRoute
   AuthenticatedTecnicoIndexRoute: typeof AuthenticatedTecnicoIndexRoute
   AuthenticatedTecnicoVisitaIdRoute: typeof AuthenticatedTecnicoVisitaIdRoute
 }
 
 const AuthenticatedTecnicoRouteRouteChildren: AuthenticatedTecnicoRouteRouteChildren =
   {
+    AuthenticatedTecnicoSemanaRoute: AuthenticatedTecnicoSemanaRoute,
     AuthenticatedTecnicoIndexRoute: AuthenticatedTecnicoIndexRoute,
     AuthenticatedTecnicoVisitaIdRoute: AuthenticatedTecnicoVisitaIdRoute,
   }
