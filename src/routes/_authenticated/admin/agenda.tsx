@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { AdminShell, StatusBadge, inputCls, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { techsQuery } from "@/lib/queries";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Repeat } from "lucide-react";
+import { recurringDates } from "@/lib/mock";
 
 export const Route = createFileRoute("/_authenticated/admin/agenda")({
   head: () => ({ meta: [{ title: "Agenda semanal — Piscivel" }, { name: "description", content: "Distribuição das visitas por técnico." }, { property: "og:title", content: "Agenda semanal — Piscivel" }, { property: "og:description", content: "Distribuição das visitas por técnico." }] }),
@@ -43,6 +44,8 @@ function Agenda() {
 
   const sameDay = (a: Date, s: string) => new Date(s).toDateString() === a.toDateString();
   const techs = team.filter((t) => t.roles.includes("tecnico") || t.roles.includes("admin"));
+  const poolOptions = pools.map((p) => <option key={p.id} value={p.id}>{p.client?.name}{p.name || p.address ? ` — ${p.name || p.address}` : ""}</option>);
+  const techOptions = techs.map((t) => <option key={t.id} value={t.id}>{t.full_name || t.email}</option>);
 
   return (
     <AdminShell title="Agenda da semana">
