@@ -58,7 +58,7 @@ function Clientes() {
         <form className="glass p-5 mb-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3" onSubmit={(e) => {
           e.preventDefault();
           const r = clientSchema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
-          if (!r.success) return toast.error("Confira os campos do formulário.");
+          if (!r.success) { toast.error("Confira os campos do formulário."); return; }
           addClient.mutate(r.data);
         }}>
           <input name="name" required maxLength={100} placeholder="Nome" className={inputCls} />

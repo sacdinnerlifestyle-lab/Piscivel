@@ -24,7 +24,7 @@ export const createAccount = createServerFn({ method: "POST" })
     });
     if (error || !created.user) throw new Error(error?.message ?? "Falha ao criar conta.");
     const id = created.user.id;
-    await supabaseAdmin.from("profiles").upsert({ id, full_name: data.full_name, email: data.email, client_id: data.role === "cliente" ? data.client_id : null });
+    await supabaseAdmin.from("profiles").upsert({ id, full_name: data.full_name, email: data.email, client_id: data.role === "cliente" ? (data.client_id ?? null) : null });
     const { error: rErr } = await supabaseAdmin.from("user_roles").insert({ user_id: id, role: data.role });
     if (rErr) throw new Error(rErr.message);
     return { id };

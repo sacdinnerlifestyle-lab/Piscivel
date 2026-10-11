@@ -20,7 +20,7 @@ function Reset() {
         setBusy(true);
         const { error } = await supabase.auth.updateUser({ password });
         setBusy(false);
-        if (error) return toast.error("Link expirado ou inválido. Peça um novo.");
+        if (error) { toast.error("Link expirado ou inválido. Peça um novo."); return; }
         toast.success("Senha atualizada!");
         nav({ to: "/" });
       }}>
