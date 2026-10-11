@@ -24,8 +24,8 @@ function Cliente() {
       const cid = me!.profile!.client_id!;
       const [{ data: client }, { data: next }, { data: reports }] = await Promise.all([
         supabase.from("clients").select("name, swimming_pools(id, name, address, coating, volume_m3, dimensions)").eq("id", cid).order("created_at", { referencedTable: "swimming_pools" }).maybeSingle(),
-        supabase.from("schedules").select("scheduled_at, pool_id").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at"),
-        supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, pool_id, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(60),
+        supabase.from("schedules").select("scheduled_at, pool_id, skip_note").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at"),
+        supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, visited_at, pool_id, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(60),
       ]);
       const withPhotos = await Promise.all((reports ?? []).map(async (r) => ({ ...r, before: await signedUrl(r.photo_before), after: await signedUrl(r.photo_after) })));
       return { client, next: next ?? [], reports: withPhotos };
@@ -36,7 +36,8 @@ function Cliente() {
   const [sel, setSel] = useState<string | null>(null);
   const pool = pools.find((p) => p.id === sel) ?? pools[0];
   const reports = (data?.reports ?? []).filter((r) => r.schedule?.pool_id === pool?.id).slice(0, 12);
-  const nextAt = (data?.next ?? []).find((n) => n.pool_id === pool?.id)?.scheduled_at ?? null;
+  const nextVisit = (data?.next ?? []).find((n) => n.pool_id === pool?.id);
+  const nextAt = nextVisit?.scheduled_at ?? null;
   const last = reports[0];
   const balanced = last ? params.every((p) => inRange(p.key, last[p.key]) !== false) : null;
 
@@ -52,7 +53,8 @@ function Cliente() {
             {pool && <div className="text-sm opacity-80 mt-1">{pool.coating} · {pool.dimensions ? `${pool.dimensions} · ` : ""}{pool.volume_m3} m³{pool.address ? ` · ${pool.address}` : ""}</div>}
             <div className="flex flex-wrap gap-4 mt-4 text-sm">
               {balanced !== null && <span className="flex items-center gap-2">{balanced ? <CheckCircle2 className="size-4 text-aqua" /> : <AlertTriangle className="size-4 text-aqua" />}{balanced ? "Água equilibrada" : "Em correção"}</span>}
-              <span className="flex items-center gap-2"><CalendarClock className="size-4 text-aqua" />{nextAt ? `Próxima visita: ${fmtDate(nextAt)} às ${fmtTime(nextAt)}` : "Próxima visita a agendar"}</span>
+              {nextVisit?.skip_note && <span className="w-full text-xs opacity-90">Aviso do técnico: {nextVisit.skip_note}</span>}
+              <span className="flex items-center gap-2"><CalendarClock className="size-4 text-aqua" />{nextAt ? `Próxima visita: ${fmtDate(nextAt)}` : "Próxima visita a agendar"}</span>
             </div>
           </div>
 
@@ -87,7 +89,7 @@ function Cliente() {
                 <h2 className="font-semibold">Histórico de visitas</h2>
                 {reports.map((r) => (
                   <div key={r.id} className="glass p-5">
-                    <div className="flex justify-between items-center"><div className="font-semibold">{fmtDate(r.schedule?.scheduled_at ?? r.created_at)}</div><span className="text-xs text-muted-foreground">Técnico: {r.schedule?.technician?.full_name ?? "—"}</span></div>
+                    <div className="flex justify-between items-center"><div className="font-semibold">{fmtDate(r.schedule?.visited_at ?? r.schedule?.scheduled_at ?? r.created_at)}{r.schedule?.visited_at ? ` às ${fmtTime(r.schedule.visited_at)}` : ""}</div><span className="text-xs text-muted-foreground">Técnico: {r.schedule?.technician?.full_name ?? "—"}</span></div>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {params.map((p) => { const ok = inRange(p.key, r[p.key]); return (
                         <span key={p.key} className={`text-xs px-2.5 py-1 rounded-full font-medium ${ok === false ? "bg-petrol text-primary-foreground" : "bg-secondary text-abyss"}`}>{p.label}: {r[p.key] ?? "—"}</span>
