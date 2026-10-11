@@ -22,6 +22,13 @@
       "when": 1791739260903,
       "tag": "0002_pool_name_address",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791740988587,
+      "tag": "0003_visit_time_and_skip",
+      "breakpoints": true
     }
   ]
 }
