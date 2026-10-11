@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Fragment } from "react";
 import { AdminShell, StatusBadge } from "@/components/Shell";
 import { visits, techs } from "@/lib/mock";
 
@@ -17,8 +18,8 @@ function Agenda() {
           <div />
           {days.map((d) => <div key={d} className="text-sm font-semibold p-2 text-center">{d}</div>)}
           {techs.map((t) => (
-            <>
-              <div key={t} className="p-2 text-sm font-medium border-t flex items-center">{t}</div>
+            <Fragment key={t}>
+              <div className="p-2 text-sm font-medium border-t flex items-center">{t}</div>
               {days.map((_, i) => (
                 <div key={t + i} className="border-t p-1.5 space-y-1.5 min-h-20">
                   {visits.filter((v) => v.tech === t && v.day === i).map((v) => (
@@ -29,7 +30,7 @@ function Agenda() {
                   ))}
                 </div>
               ))}
-            </>
+            </Fragment>
           ))}
         </div>
       </div>
