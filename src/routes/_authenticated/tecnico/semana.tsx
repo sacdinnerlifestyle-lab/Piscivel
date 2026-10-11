@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { StatusBadge, Empty, startOfDay, addDays } from "@/components/Shell";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { StatusBadge, Empty, startOfDay, addDays, fmtDate } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/session";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, FastForward } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tecnico/semana")({
   head: () => ({ meta: [{ title: "Minha semana — Piscivel" }, { name: "description", content: "Próximas visitas do técnico na semana." }, { property: "og:title", content: "Minha semana — Piscivel" }, { property: "og:description", content: "Próximas visitas do técnico na semana." }] }),
@@ -11,13 +12,29 @@ export const Route = createFileRoute("/_authenticated/tecnico/semana")({
 });
 
 function Semana() {
+  const qc = useQueryClient();
   const { data: me } = useQuery(meQuery);
   const start = startOfDay();
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const { data: list = [], isLoading } = useQuery({
     queryKey: ["my-week", me?.user.id],
     enabled: !!me,
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, skip_note, pool:swimming_pools(name, address, client:clients(name, address))").eq("technician_id", me!.user.id).gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, skip_note, original_date, pool:swimming_pools(name, address, client:clients(name, address))").eq("technician_id", me!.user.id).gte("scheduled_at", start.toISOString()).lt("scheduled_at", addDays(start, 7).toISOString()).order("scheduled_at")).data ?? [],
+  });
+
+  const advance = useMutation({
+    mutationFn: async (v: { id: string; scheduled_at: string; original_date: string | null }) => {
+      const today = startOfDay();
+      today.setHours(12, 0, 0, 0);
+      const { error } = await supabase.from("schedules").update({
+        scheduled_at: today.toISOString(),
+        original_date: v.original_date ?? v.scheduled_at,
+        skip_note: `Visita antecipada de ${fmtDate(v.scheduled_at)} para ${fmtDate(today.toISOString())}`,
+      }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Visita antecipada para hoje"); qc.invalidateQueries({ queryKey: ["my-week"] }); qc.invalidateQueries({ queryKey: ["my-route"] }); },
+    onError: (e) => toast.error(e.message),
   });
 
   return (
@@ -49,6 +66,9 @@ function Semana() {
                   </div>
                   {addr && <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2"><MapPin className="size-3.5" />{addr}</a>}
                   {v.skip_note && <p className="text-xs text-petrol mt-2">Remarcada: {v.skip_note}</p>}
+                  {i > 0 && v.status === "agendada" && (
+                    <button disabled={advance.isPending} onClick={() => { if (confirm("Antecipar esta visita para hoje?")) advance.mutate(v); }} className="w-full mt-3 py-2.5 text-sm font-semibold text-primary flex items-center justify-center gap-2 border rounded-lg"><FastForward className="size-4" />Antecipar para hoje</button>
+                  )}
                 </div>
               );
             })}
