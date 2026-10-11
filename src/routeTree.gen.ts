@@ -10,115 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ClienteRouteImport } from './routes/cliente'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminAgendaRouteImport } from './routes/admin.agenda'
-import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
-import { Route as TecnicoIndexRouteImport } from './routes/tecnico.index'
-import { Route as TecnicoVisitaIdRouteImport } from './routes/tecnico.visita.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClienteRoute = ClienteRouteImport.update({
-  id: '/cliente',
-  path: '/cliente',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAgendaRoute = AdminAgendaRouteImport.update({
-  id: '/admin/agenda',
-  path: '/admin/agenda',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminClientesRoute = AdminClientesRouteImport.update({
-  id: '/admin/clientes',
-  path: '/admin/clientes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TecnicoIndexRoute = TecnicoIndexRouteImport.update({
-  id: '/tecnico/',
-  path: '/tecnico/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TecnicoVisitaIdRoute = TecnicoVisitaIdRouteImport.update({
-  id: '/tecnico/visita/$id',
-  path: '/tecnico/visita/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin/': typeof AdminIndexRoute
-  '/tecnico/': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin': typeof AdminIndexRoute
-  '/tecnico': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin/': typeof AdminIndexRoute
-  '/tecnico/': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/cliente'
-    | '/admin/agenda'
-    | '/admin/clientes'
-    | '/admin/'
-    | '/tecnico/'
-    | '/tecnico/visita/$id'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/cliente'
-    | '/admin/agenda'
-    | '/admin/clientes'
-    | '/admin'
-    | '/tecnico'
-    | '/tecnico/visita/$id'
-  id:
-    | '__root__'
-    | '/'
-    | '/cliente'
-    | '/admin/agenda'
-    | '/admin/clientes'
-    | '/admin/'
-    | '/tecnico/'
-    | '/tecnico/visita/$id'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ClienteRoute: typeof ClienteRoute
-  AdminAgendaRoute: typeof AdminAgendaRoute
-  AdminClientesRoute: typeof AdminClientesRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  TecnicoIndexRoute: typeof TecnicoIndexRoute
-  TecnicoVisitaIdRoute: typeof TecnicoVisitaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -130,59 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cliente': {
-      id: '/cliente'
-      path: '/cliente'
-      fullPath: '/cliente'
-      preLoaderRoute: typeof ClienteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/agenda': {
-      id: '/admin/agenda'
-      path: '/admin/agenda'
-      fullPath: '/admin/agenda'
-      preLoaderRoute: typeof AdminAgendaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/clientes': {
-      id: '/admin/clientes'
-      path: '/admin/clientes'
-      fullPath: '/admin/clientes'
-      preLoaderRoute: typeof AdminClientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnico/': {
-      id: '/tecnico/'
-      path: '/tecnico'
-      fullPath: '/tecnico/'
-      preLoaderRoute: typeof TecnicoIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnico/visita/$id': {
-      id: '/tecnico/visita/$id'
-      path: '/tecnico/visita/$id'
-      fullPath: '/tecnico/visita/$id'
-      preLoaderRoute: typeof TecnicoVisitaIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ClienteRoute: ClienteRoute,
-  AdminAgendaRoute: AdminAgendaRoute,
-  AdminClientesRoute: AdminClientesRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  TecnicoIndexRoute: TecnicoIndexRoute,
-  TecnicoVisitaIdRoute: TecnicoVisitaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
