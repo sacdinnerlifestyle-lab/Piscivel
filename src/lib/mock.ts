@@ -21,3 +21,10 @@ export const params = [
   { key: "alk", label: "Alcalinidade Total", min: 80, max: 120, unit: "ppm", step: 1 },
   { key: "cya", label: "Ácido Cianúrico", min: 30, max: 50, unit: "ppm", step: 1 },
 ] as const;
+export interface WeekReport { date: string; ph: number; cl: number; alk: number; cya: number; tasks: string[]; products: string[]; tech: string; note: string }
+export const clientReports: WeekReport[] = [
+  { date: "09/10/2026", ph: 7.4, cl: 2.1, alk: 100, cya: 40, tasks: ["Peneiramento", "Escovação", "Aspiração", "Skimmer"], products: ["Cloro granulado 300g", "Clarificante 100ml"], tech: "Rafael Lima", note: "Água cristalina, tudo equilibrado." },
+  { date: "02/10/2026", ph: 7.8, cl: 1.4, alk: 95, cya: 38, tasks: ["Peneiramento", "Escovação", "Retrolavagem"], products: ["Redutor de pH 200ml", "Cloro granulado 400g"], tech: "Rafael Lima", note: "pH alto corrigido." },
+  { date: "25/09/2026", ph: 7.5, cl: 0.8, alk: 85, cya: 35, tasks: ["Peneiramento", "Aspiração", "Skimmer"], products: ["Cloro granulado 500g", "Algicida 150ml"], tech: "Bruna Costa", note: "Cloro baixo após chuvas, reforçado." },
+  { date: "18/09/2026", ph: 7.3, cl: 2.4, alk: 110, cya: 42, tasks: ["Peneiramento", "Escovação", "Aspiração"], products: ["Cloro granulado 250g"], tech: "Rafael Lima", note: "Manutenção de rotina." },
+];
