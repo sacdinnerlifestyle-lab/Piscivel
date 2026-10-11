@@ -1,24 +1,50 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { Logo } from "@/components/Shell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Piscivel — Gestão de manutenção de piscinas" },
+      { name: "description", content: "Rotas, checklists e qualidade da água das piscinas dos seus clientes em um só lugar." },
+      { property: "og:title", content: "Piscivel — Gestão de manutenção de piscinas" },
+      { property: "og:description", content: "Rotas, checklists e qualidade da água em um só lugar." },
+    ],
+  }),
+  component: Login,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Login() {
+  const nav = useNavigate();
+  const [role, setRole] = useState<"admin" | "tecnico">("admin");
+  const [forgot, setForgot] = useState(false);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen grid place-items-center p-5">
+      <div className="glass w-full max-w-md p-8">
+        <Logo />
+        <h1 className="text-2xl font-bold mt-8">{forgot ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{forgot ? "Enviaremos um link para seu e-mail." : "Acesse sua rota de hoje."}</p>
+        <form className="mt-6 space-y-4" onSubmit={(e) => { e.preventDefault(); if (forgot) return setForgot(false); nav({ to: role === "admin" ? "/admin" : "/tecnico" }); }}>
+          <input type="email" required placeholder="E-mail" defaultValue="gestor@piscivel.com" className="w-full rounded-lg border bg-ice px-4 py-3 outline-none focus:ring-2 ring-ring" />
+          {!forgot && <input type="password" required placeholder="Senha" defaultValue="demo1234" className="w-full rounded-lg border bg-ice px-4 py-3 outline-none focus:ring-2 ring-ring" />}
+          {!forgot && (
+            <>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-secondary rounded-lg text-sm">
+                {(["admin", "tecnico"] as const).map((r) => (
+                  <button type="button" key={r} onClick={() => setRole(r)} className={`py-2 rounded-md font-medium ${role === r ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{r === "admin" ? "Administrador" : "Técnico"}</button>
+                ))}
+              </div>
+              <div className="flex justify-between text-sm">
+                <label className="flex items-center gap-2"><input type="checkbox" defaultChecked className="accent-primary" />Lembrar-me</label>
+                <button type="button" onClick={() => setForgot(true)} className="text-primary font-medium">Esqueci a senha</button>
+              </div>
+            </>
+          )}
+          <button className="btn-primary w-full py-3">{forgot ? "Enviar link" : "Entrar"}</button>
+          {forgot && <button type="button" onClick={() => setForgot(false)} className="w-full text-sm text-muted-foreground">Voltar</button>}
+        </form>
+        <p className="text-xs text-muted-foreground mt-6 text-center">Contas de técnicos são criadas pelo administrador.</p>
+      </div>
     </div>
   );
 }
