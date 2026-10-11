@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Logo, StatusBadge, SignOutButton, Empty, startOfDay, addDays, fmtTime, fmtDate } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/session";
-import { MapPin, Play, LayoutDashboard, CalendarX } from "lucide-react";
+import { MapPin, Play, LayoutDashboard, CalendarX, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tecnico/")({
   head: () => ({ meta: [{ title: "Minha rota do dia — Piscivel" }, { name: "description", content: "Visitas do dia do técnico." }, { property: "og:title", content: "Minha rota do dia — Piscivel" }, { property: "og:description", content: "Visitas do dia do técnico." }] }),
@@ -55,6 +55,7 @@ function Tecnico() {
         <div className="text-2xl font-bold">{mine.length} visitas hoje</div>
         <div className="h-2 bg-abyss-foreground/20 rounded-full mt-4"><div className="h-full bg-aqua rounded-full" style={{ width: `${mine.length ? (done / mine.length) * 100 : 0}%` }} /></div>
       </div>
+      <Link to="/tecnico/semana" className="glass mt-4 py-3 flex items-center justify-center gap-2 font-semibold text-primary"><CalendarDays className="size-4" />Ver minhas visitas da semana</Link>
       <div className="space-y-3 mt-5">
         {mine.length === 0 && <Empty>Nenhuma visita para hoje.</Empty>}
         {mine.map((v) => {
