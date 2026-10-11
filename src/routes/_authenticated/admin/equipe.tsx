@@ -5,23 +5,13 @@ import { toast } from "sonner";
 import { AdminShell, Empty, inputCls } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { createAccount } from "@/lib/users.functions";
+import { techsQuery } from "@/lib/queries";
 import { UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/equipe")({
   head: () => ({ meta: [{ title: "Equipe — Piscivel" }, { name: "description", content: "Cadastre técnicos e gestores." }, { property: "og:title", content: "Equipe — Piscivel" }, { property: "og:description", content: "Cadastre técnicos e gestores." }] }),
   component: Equipe,
 });
-
-export const techsQuery = {
-  queryKey: ["team"],
-  queryFn: async () => {
-    const { data: roles } = await supabase.from("user_roles").select("user_id, role").in("role", ["tecnico", "admin"]);
-    const ids = [...new Set((roles ?? []).map((r) => r.user_id))];
-    if (!ids.length) return [];
-    const { data: profs } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
-    return (profs ?? []).map((p) => ({ ...p, roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role) }));
-  },
-};
 
 function Equipe() {
   const qc = useQueryClient();

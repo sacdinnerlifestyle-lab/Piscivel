@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminShell, StatusBadge, inputCls, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { techsQuery } from "./equipe";
+import { techsQuery } from "@/lib/queries";
 import { Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/agenda")({
