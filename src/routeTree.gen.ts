@@ -10,115 +10,168 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ClienteRouteImport } from './routes/cliente'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminAgendaRouteImport } from './routes/admin.agenda'
-import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
-import { Route as TecnicoIndexRouteImport } from './routes/tecnico.index'
-import { Route as TecnicoVisitaIdRouteImport } from './routes/tecnico.visita.$id'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
+import { Route as AuthenticatedTecnicoRouteRouteImport } from './routes/_authenticated/tecnico/route'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAgendaRouteImport } from './routes/_authenticated/admin/agenda'
+import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin/clientes'
+import { Route as AuthenticatedAdminEquipeRouteImport } from './routes/_authenticated/admin/equipe'
+import { Route as AuthenticatedTecnicoIndexRouteImport } from './routes/_authenticated/tecnico/index'
+import { Route as AuthenticatedTecnicoVisitaIdRouteImport } from './routes/_authenticated/tecnico/visita.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClienteRoute = ClienteRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
   id: '/cliente',
   path: '/cliente',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedTecnicoRouteRoute =
+  AuthenticatedTecnicoRouteRouteImport.update({
+    id: '/tecnico',
+    path: '/tecnico',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
-const AdminAgendaRoute = AdminAgendaRouteImport.update({
-  id: '/admin/agenda',
-  path: '/admin/agenda',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminClientesRoute = AdminClientesRouteImport.update({
-  id: '/admin/clientes',
-  path: '/admin/clientes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TecnicoIndexRoute = TecnicoIndexRouteImport.update({
-  id: '/tecnico/',
-  path: '/tecnico/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TecnicoVisitaIdRoute = TecnicoVisitaIdRouteImport.update({
-  id: '/tecnico/visita/$id',
-  path: '/tecnico/visita/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedAdminAgendaRoute =
+  AuthenticatedAdminAgendaRouteImport.update({
+    id: '/agenda',
+    path: '/agenda',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminClientesRoute =
+  AuthenticatedAdminClientesRouteImport.update({
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminEquipeRoute =
+  AuthenticatedAdminEquipeRouteImport.update({
+    id: '/equipe',
+    path: '/equipe',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedTecnicoIndexRoute =
+  AuthenticatedTecnicoIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedTecnicoRouteRoute,
+  } as any)
+const AuthenticatedTecnicoVisitaIdRoute =
+  AuthenticatedTecnicoVisitaIdRouteImport.update({
+    id: '/visita/$id',
+    path: '/visita/$id',
+    getParentRoute: () => AuthenticatedTecnicoRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin/': typeof AdminIndexRoute
-  '/tecnico/': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/tecnico': typeof AuthenticatedTecnicoRouteRouteWithChildren
+  '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/admin/clientes': typeof AuthenticatedAdminClientesRoute
+  '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/tecnico/': typeof AuthenticatedTecnicoIndexRoute
+  '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin': typeof AdminIndexRoute
-  '/tecnico': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/admin/clientes': typeof AuthenticatedAdminClientesRoute
+  '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/tecnico': typeof AuthenticatedTecnicoIndexRoute
+  '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/cliente': typeof ClienteRoute
-  '/admin/agenda': typeof AdminAgendaRoute
-  '/admin/clientes': typeof AdminClientesRoute
-  '/admin/': typeof AdminIndexRoute
-  '/tecnico/': typeof TecnicoIndexRoute
-  '/tecnico/visita/$id': typeof TecnicoVisitaIdRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/_authenticated/tecnico': typeof AuthenticatedTecnicoRouteRouteWithChildren
+  '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/admin/agenda': typeof AuthenticatedAdminAgendaRoute
+  '/_authenticated/admin/clientes': typeof AuthenticatedAdminClientesRoute
+  '/_authenticated/admin/equipe': typeof AuthenticatedAdminEquipeRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/tecnico/': typeof AuthenticatedTecnicoIndexRoute
+  '/_authenticated/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/reset-password'
+    | '/admin'
+    | '/tecnico'
     | '/cliente'
     | '/admin/agenda'
     | '/admin/clientes'
+    | '/admin/equipe'
     | '/admin/'
     | '/tecnico/'
     | '/tecnico/visita/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/reset-password'
     | '/cliente'
     | '/admin/agenda'
     | '/admin/clientes'
+    | '/admin/equipe'
     | '/admin'
     | '/tecnico'
     | '/tecnico/visita/$id'
   id:
     | '__root__'
     | '/'
-    | '/cliente'
-    | '/admin/agenda'
-    | '/admin/clientes'
-    | '/admin/'
-    | '/tecnico/'
-    | '/tecnico/visita/$id'
+    | '/_authenticated'
+    | '/reset-password'
+    | '/_authenticated/admin'
+    | '/_authenticated/tecnico'
+    | '/_authenticated/cliente'
+    | '/_authenticated/admin/agenda'
+    | '/_authenticated/admin/clientes'
+    | '/_authenticated/admin/equipe'
+    | '/_authenticated/admin/'
+    | '/_authenticated/tecnico/'
+    | '/_authenticated/tecnico/visita/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ClienteRoute: typeof ClienteRoute
-  AdminAgendaRoute: typeof AdminAgendaRoute
-  AdminClientesRoute: typeof AdminClientesRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  TecnicoIndexRoute: typeof TecnicoIndexRoute
-  TecnicoVisitaIdRoute: typeof TecnicoVisitaIdRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -130,59 +183,141 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cliente': {
-      id: '/cliente'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cliente': {
+      id: '/_authenticated/cliente'
       path: '/cliente'
       fullPath: '/cliente'
-      preLoaderRoute: typeof ClienteRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedClienteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/agenda': {
-      id: '/admin/agenda'
-      path: '/admin/agenda'
-      fullPath: '/admin/agenda'
-      preLoaderRoute: typeof AdminAgendaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/clientes': {
-      id: '/admin/clientes'
-      path: '/admin/clientes'
-      fullPath: '/admin/clientes'
-      preLoaderRoute: typeof AdminClientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnico/': {
-      id: '/tecnico/'
+    '/_authenticated/tecnico': {
+      id: '/_authenticated/tecnico'
       path: '/tecnico'
-      fullPath: '/tecnico/'
-      preLoaderRoute: typeof TecnicoIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/tecnico'
+      preLoaderRoute: typeof AuthenticatedTecnicoRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/tecnico/visita/$id': {
-      id: '/tecnico/visita/$id'
-      path: '/tecnico/visita/$id'
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/agenda': {
+      id: '/_authenticated/admin/agenda'
+      path: '/agenda'
+      fullPath: '/admin/agenda'
+      preLoaderRoute: typeof AuthenticatedAdminAgendaRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/clientes': {
+      id: '/_authenticated/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AuthenticatedAdminClientesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/equipe': {
+      id: '/_authenticated/admin/equipe'
+      path: '/equipe'
+      fullPath: '/admin/equipe'
+      preLoaderRoute: typeof AuthenticatedAdminEquipeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/tecnico/': {
+      id: '/_authenticated/tecnico/'
+      path: '/'
+      fullPath: '/tecnico/'
+      preLoaderRoute: typeof AuthenticatedTecnicoIndexRouteImport
+      parentRoute: typeof AuthenticatedTecnicoRouteRoute
+    }
+    '/_authenticated/tecnico/visita/$id': {
+      id: '/_authenticated/tecnico/visita/$id'
+      path: '/visita/$id'
       fullPath: '/tecnico/visita/$id'
-      preLoaderRoute: typeof TecnicoVisitaIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedTecnicoVisitaIdRouteImport
+      parentRoute: typeof AuthenticatedTecnicoRouteRoute
     }
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAgendaRoute: typeof AuthenticatedAdminAgendaRoute
+  AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
+  AuthenticatedAdminEquipeRoute: typeof AuthenticatedAdminEquipeRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminAgendaRoute: AuthenticatedAdminAgendaRoute,
+    AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
+    AuthenticatedAdminEquipeRoute: AuthenticatedAdminEquipeRoute,
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
+interface AuthenticatedTecnicoRouteRouteChildren {
+  AuthenticatedTecnicoIndexRoute: typeof AuthenticatedTecnicoIndexRoute
+  AuthenticatedTecnicoVisitaIdRoute: typeof AuthenticatedTecnicoVisitaIdRoute
+}
+
+const AuthenticatedTecnicoRouteRouteChildren: AuthenticatedTecnicoRouteRouteChildren =
+  {
+    AuthenticatedTecnicoIndexRoute: AuthenticatedTecnicoIndexRoute,
+    AuthenticatedTecnicoVisitaIdRoute: AuthenticatedTecnicoVisitaIdRoute,
+  }
+
+const AuthenticatedTecnicoRouteRouteWithChildren =
+  AuthenticatedTecnicoRouteRoute._addFileChildren(
+    AuthenticatedTecnicoRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
+  AuthenticatedTecnicoRouteRoute: typeof AuthenticatedTecnicoRouteRouteWithChildren
+  AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
+  AuthenticatedTecnicoRouteRoute: AuthenticatedTecnicoRouteRouteWithChildren,
+  AuthenticatedClienteRoute: AuthenticatedClienteRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ClienteRoute: ClienteRoute,
-  AdminAgendaRoute: AdminAgendaRoute,
-  AdminClientesRoute: AdminClientesRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  TecnicoIndexRoute: TecnicoIndexRoute,
-  TecnicoVisitaIdRoute: TecnicoVisitaIdRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
