@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -38,10 +38,10 @@ function Equipe() {
       {team.length === 0 ? <Empty>Nenhum membro ainda.</Empty> : (
         <div className="glass divide-y">
           {team.map((t) => (
-            <div key={t.id} className="p-4 flex items-center gap-4">
+            <Link key={t.id} to="/admin/tecnico/$id" params={{ id: t.id }} className="p-4 flex items-center gap-4 hover:bg-secondary/50">
               <div className="flex-1"><div className="font-medium">{t.full_name || "—"}</div><div className="text-xs text-muted-foreground">{t.email}</div></div>
               {t.roles.map((r) => <span key={r} className="text-xs bg-secondary px-2.5 py-1 rounded-full">{r === "admin" ? "Gestor" : "Técnico"}</span>)}
-            </div>
+            </Link>
           ))}
         </div>
       )}
