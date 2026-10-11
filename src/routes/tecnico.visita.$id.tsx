@@ -18,7 +18,7 @@ function Visita() {
   const [used, setUsed] = useState<Record<string, string>>({});
   const [done, setDone] = useState<string[]>([]);
   const [photos, setPhotos] = useState<{ antes?: string; depois?: string }>({});
-  const ok = (k: string, min: number, max: number) => { const n = parseFloat(vals[k]); return isNaN(n) ? null : n >= min && n <= max; };
+  const ok = (k: string, min: number, max: number) => { const n = parseFloat(vals[k] ?? ""); return isNaN(n) ? null : n >= min && n <= max; };
   const ready = photos.antes && photos.depois;
 
   const summary = [

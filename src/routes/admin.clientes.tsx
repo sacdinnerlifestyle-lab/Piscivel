@@ -19,7 +19,7 @@ function Clientes() {
       {open && (
         <form className="glass p-5 mb-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3" onSubmit={(e) => {
           e.preventDefault(); const f = new FormData(e.currentTarget);
-          setList([{ ...visits[0], id: String(Date.now()), client: String(f.get("n")), phone: String(f.get("p")), address: String(f.get("a")), pool: String(f.get("t")), volume: Number(f.get("v")) }, ...list]); setOpen(false);
+          setList([{ ...visits[0]!, id: String(Date.now()), client: String(f.get("n")), phone: String(f.get("p")), address: String(f.get("a")), pool: String(f.get("t")), volume: Number(f.get("v")) }, ...list]); setOpen(false);
         }}>
           <input name="n" required placeholder="Nome" className={inp} />
           <input name="p" required placeholder="Telefone" className={inp} />
