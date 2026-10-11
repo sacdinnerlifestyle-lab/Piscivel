@@ -19,7 +19,7 @@ function Dashboard() {
       const from = startOfDay().toISOString(), to = addDays(startOfDay(), 1).toISOString();
       const since = addDays(startOfDay(), -30).toISOString();
       const [today, clients, reports, techs] = await Promise.all([
-        supabase.from("schedules").select("id, scheduled_at, status, technician:profiles(full_name), pool:swimming_pools(client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
+        supabase.from("schedules").select("id, scheduled_at, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
@@ -66,7 +66,7 @@ function Dashboard() {
               {today.map((v) => (
                 <div key={v.id} className="py-3 flex items-center gap-4">
                   <span className="text-sm font-mono text-muted-foreground w-12">{fmtTime(v.scheduled_at)}</span>
-                  <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}</div></div>
+                  <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}</div></div>
                   <StatusBadge s={v.status} />
                 </div>
               ))}

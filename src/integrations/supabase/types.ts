@@ -117,27 +117,33 @@ export type Database = {
       }
       swimming_pools: {
         Row: {
+          address: string | null
           client_id: string
           coating: string
           created_at: string
           dimensions: string | null
           id: string
+          name: string | null
           volume_m3: number
         }
         Insert: {
+          address?: string | null
           client_id: string
           coating?: string
           created_at?: string
           dimensions?: string | null
           id?: string
+          name?: string | null
           volume_m3?: number
         }
         Update: {
+          address?: string | null
           client_id?: string
           coating?: string
           created_at?: string
           dimensions?: string | null
           id?: string
+          name?: string | null
           volume_m3?: number
         }
         Relationships: [

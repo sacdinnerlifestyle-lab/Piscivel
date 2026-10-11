@@ -15,7 +15,7 @@ function Tecnico() {
   const { data: mine = [] } = useQuery({
     queryKey: ["my-route", me?.user.id],
     enabled: !!me,
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, pool:swimming_pools(client:clients(name, address))").eq("technician_id", me!.user.id).gte("scheduled_at", startOfDay().toISOString()).lt("scheduled_at", addDays(startOfDay(), 1).toISOString()).order("scheduled_at")).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, status, pool:swimming_pools(name, address, client:clients(name, address))").eq("technician_id", me!.user.id).gte("scheduled_at", startOfDay().toISOString()).lt("scheduled_at", addDays(startOfDay(), 1).toISOString()).order("scheduled_at")).data ?? [],
   });
   const done = mine.filter((v) => v.status === "concluida").length;
   return (
@@ -37,10 +37,10 @@ function Tecnico() {
         {mine.map((v) => (
           <div key={v.id} className="glass p-4">
             <div className="flex justify-between items-start gap-2">
-              <div><div className="text-sm font-mono text-sky font-semibold">{fmtTime(v.scheduled_at)}</div><div className="font-semibold">{v.pool?.client?.name}</div></div>
+              <div><div className="text-sm font-mono text-sky font-semibold">{fmtTime(v.scheduled_at)}</div><div className="font-semibold">{v.pool?.client?.name}</div>{v.pool?.name && <div className="text-xs text-muted-foreground">{v.pool.name}</div>}</div>
               <StatusBadge s={v.status} />
             </div>
-            {v.pool?.client?.address && <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.pool.client.address)}`} className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2"><MapPin className="size-3.5" />{v.pool.client.address}</a>}
+            {(() => { const addr = v.pool?.address || v.pool?.client?.address; return addr ? <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2"><MapPin className="size-3.5" />{addr}</a> : null; })()}
             {v.status !== "concluida" && (
               <Link to="/tecnico/visita/$id" params={{ id: v.id }} className="btn-primary w-full py-3 mt-4 flex items-center justify-center gap-2"><Play className="size-4" />{v.status === "em_andamento" ? "Continuar Atendimento" : "Iniciar Atendimento"}</Link>
             )}

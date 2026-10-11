@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { poolLabel } from "@/components/PoolFields";
 import { Logo, SignOutButton, Empty, fmtDate, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { requireRole } from "@/lib/guard";
@@ -21,19 +23,22 @@ function Cliente() {
     queryFn: async () => {
       const cid = me!.profile!.client_id!;
       const [{ data: client }, { data: next }, { data: reports }] = await Promise.all([
-        supabase.from("clients").select("name, swimming_pools(coating, volume_m3)").eq("id", cid).maybeSingle(),
-        supabase.from("schedules").select("scheduled_at").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at").limit(1),
-        supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(12),
+        supabase.from("clients").select("name, swimming_pools(id, name, address, coating, volume_m3, dimensions)").eq("id", cid).order("created_at", { referencedTable: "swimming_pools" }).maybeSingle(),
+        supabase.from("schedules").select("scheduled_at, pool_id").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at"),
+        supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, pool_id, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(60),
       ]);
       const withPhotos = await Promise.all((reports ?? []).map(async (r) => ({ ...r, before: await signedUrl(r.photo_before), after: await signedUrl(r.photo_after) })));
-      return { client, next: next?.[0]?.scheduled_at ?? null, reports: withPhotos };
+      return { client, next: next ?? [], reports: withPhotos };
     },
   });
 
-  const reports = data?.reports ?? [];
+  const pools = data?.client?.swimming_pools ?? [];
+  const [sel, setSel] = useState<string | null>(null);
+  const pool = pools.find((p) => p.id === sel) ?? pools[0];
+  const reports = (data?.reports ?? []).filter((r) => r.schedule?.pool_id === pool?.id).slice(0, 12);
+  const nextAt = (data?.next ?? []).find((n) => n.pool_id === pool?.id)?.scheduled_at ?? null;
   const last = reports[0];
   const balanced = last ? params.every((p) => inRange(p.key, last[p.key]) !== false) : null;
-  const pool = data?.client?.swimming_pools[0];
 
   return (
     <div className="max-w-3xl mx-auto min-h-screen p-5 space-y-5">
@@ -43,12 +48,21 @@ function Cliente() {
         <>
           <div className="bg-deep text-abyss-foreground rounded-2xl p-6">
             <div className="text-sm opacity-75">Olá, {data?.client?.name ?? "…"}</div>
-            {pool && <div className="text-2xl font-bold mt-1">Piscina de {pool.coating.toLowerCase()} · {pool.volume_m3} m³</div>}
+            {pool && <div className="text-2xl font-bold mt-1">{poolLabel(pool, pools.indexOf(pool))}</div>}
+            {pool && <div className="text-sm opacity-80 mt-1">{pool.coating} · {pool.dimensions ? `${pool.dimensions} · ` : ""}{pool.volume_m3} m³{pool.address ? ` · ${pool.address}` : ""}</div>}
             <div className="flex flex-wrap gap-4 mt-4 text-sm">
               {balanced !== null && <span className="flex items-center gap-2">{balanced ? <CheckCircle2 className="size-4 text-aqua" /> : <AlertTriangle className="size-4 text-aqua" />}{balanced ? "Água equilibrada" : "Em correção"}</span>}
-              <span className="flex items-center gap-2"><CalendarClock className="size-4 text-aqua" />{data?.next ? `Próxima visita: ${fmtDate(data.next)} às ${fmtTime(data.next)}` : "Próxima visita a agendar"}</span>
+              <span className="flex items-center gap-2"><CalendarClock className="size-4 text-aqua" />{nextAt ? `Próxima visita: ${fmtDate(nextAt)} às ${fmtTime(nextAt)}` : "Próxima visita a agendar"}</span>
             </div>
           </div>
+
+          {pools.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {pools.map((p, i) => (
+                <button key={p.id} onClick={() => setSel(p.id)} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border ${p.id === pool?.id ? "bg-primary text-primary-foreground" : "bg-ice"}`}>{poolLabel(p, i)}</button>
+              ))}
+            </div>
+          )}
 
           {reports.length === 0 ? <Empty>Assim que a primeira visita for concluída, o relatório aparece aqui.</Empty> : (
             <>

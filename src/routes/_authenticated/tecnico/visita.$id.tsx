@@ -19,7 +19,7 @@ function Visita() {
   const { data: me } = useQuery(meQuery);
   const { data: v, isLoading } = useQuery({
     queryKey: ["schedule", id],
-    queryFn: async () => (await supabase.from("schedules").select("id, status, pool:swimming_pools(coating, volume_m3, client:clients(name, phone))").eq("id", id).maybeSingle()).data,
+    queryFn: async () => (await supabase.from("schedules").select("id, status, pool:swimming_pools(name, coating, volume_m3, client:clients(name, phone))").eq("id", id).maybeSingle()).data,
   });
   const [vals, setVals] = useState<Record<string, string>>({});
   const [used, setUsed] = useState<Record<string, string>>({});
@@ -41,7 +41,7 @@ function Visita() {
   const client = v.pool?.client;
 
   const summary = [
-    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, `Data: ${new Date().toLocaleDateString("pt-BR")}`, ``,
+    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${new Date().toLocaleDateString("pt-BR")}`, ``,
     `*Parâmetros da água*`, ...params.map((p) => { const s = inRange(p.key, num(p.key)); return `• ${p.label}: ${vals[p.key] || "-"} ${p.unit} ${s ? "✅" : s === false ? "⚠️" : ""}`; }),
     ``, `*Produtos aplicados*`, ...Object.entries(used).filter(([, q]) => q).map(([c, q]) => `• ${c}: ${q}`), ``,
     `*Serviços realizados*`, ...done.map((t) => `✔ ${t}`), ``, `Sua piscina está cristalina! 💧`,
@@ -82,7 +82,7 @@ function Visita() {
   return (
     <div className="max-w-lg mx-auto p-5 pb-28 space-y-4">
       <Link to="/tecnico" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />Voltar</Link>
-      <div><h1 className="text-2xl font-bold">{client?.name}</h1><p className="text-sm text-muted-foreground">{v.pool?.coating} · {v.pool?.volume_m3} m³</p></div>
+      <div><h1 className="text-2xl font-bold">{client?.name}</h1><p className="text-sm text-muted-foreground">{v.pool?.name ? `${v.pool.name} · ` : ""}{v.pool?.coating} · {v.pool?.volume_m3} m³</p></div>
 
       <section className={card}>
         <h2 className="font-semibold">Parâmetros da água</h2>
