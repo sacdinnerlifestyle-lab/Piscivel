@@ -21,6 +21,7 @@ import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminEquipeRouteImport } from './routes/_authenticated/admin/equipe'
 import { Route as AuthenticatedTecnicoIndexRouteImport } from './routes/_authenticated/tecnico/index'
 import { Route as AuthenticatedTecnicoSemanaRouteImport } from './routes/_authenticated/tecnico/semana'
+import { Route as AuthenticatedAdminTecnicoIdRouteImport } from './routes/_authenticated/admin/tecnico.$id'
 import { Route as AuthenticatedTecnicoVisitaIdRouteImport } from './routes/_authenticated/tecnico/visita.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -88,6 +89,12 @@ const AuthenticatedTecnicoSemanaRoute =
     path: '/semana',
     getParentRoute: () => AuthenticatedTecnicoRouteRoute,
   } as any)
+const AuthenticatedAdminTecnicoIdRoute =
+  AuthenticatedAdminTecnicoIdRouteImport.update({
+    id: '/tecnico/$id',
+    path: '/tecnico/$id',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedTecnicoVisitaIdRoute =
   AuthenticatedTecnicoVisitaIdRouteImport.update({
     id: '/visita/$id',
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/tecnico/': typeof AuthenticatedTecnicoIndexRoute
+  '/admin/tecnico/$id': typeof AuthenticatedAdminTecnicoIdRoute
   '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRoutesByTo {
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/tecnico': typeof AuthenticatedTecnicoIndexRoute
+  '/admin/tecnico/$id': typeof AuthenticatedAdminTecnicoIdRoute
   '/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRoutesById {
@@ -135,6 +144,7 @@ export interface FileRoutesById {
   '/_authenticated/tecnico/semana': typeof AuthenticatedTecnicoSemanaRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/tecnico/': typeof AuthenticatedTecnicoIndexRoute
+  '/_authenticated/admin/tecnico/$id': typeof AuthenticatedAdminTecnicoIdRoute
   '/_authenticated/tecnico/visita/$id': typeof AuthenticatedTecnicoVisitaIdRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/tecnico/semana'
     | '/admin/'
     | '/tecnico/'
+    | '/admin/tecnico/$id'
     | '/tecnico/visita/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/tecnico/semana'
     | '/admin'
     | '/tecnico'
+    | '/admin/tecnico/$id'
     | '/tecnico/visita/$id'
   id:
     | '__root__'
@@ -178,6 +190,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tecnico/semana'
     | '/_authenticated/admin/'
     | '/_authenticated/tecnico/'
+    | '/_authenticated/admin/tecnico/$id'
     | '/_authenticated/tecnico/visita/$id'
   fileRoutesById: FileRoutesById
 }
@@ -273,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTecnicoSemanaRouteImport
       parentRoute: typeof AuthenticatedTecnicoRouteRoute
     }
+    '/_authenticated/admin/tecnico/$id': {
+      id: '/_authenticated/admin/tecnico/$id'
+      path: '/tecnico/$id'
+      fullPath: '/admin/tecnico/$id'
+      preLoaderRoute: typeof AuthenticatedAdminTecnicoIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/tecnico/visita/$id': {
       id: '/_authenticated/tecnico/visita/$id'
       path: '/visita/$id'
@@ -288,6 +308,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminEquipeRoute: typeof AuthenticatedAdminEquipeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminTecnicoIdRoute: typeof AuthenticatedAdminTecnicoIdRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -296,6 +317,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
     AuthenticatedAdminEquipeRoute: AuthenticatedAdminEquipeRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminTecnicoIdRoute: AuthenticatedAdminTecnicoIdRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
