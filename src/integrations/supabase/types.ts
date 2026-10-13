@@ -198,6 +198,7 @@ export type Database = {
           schedule_id: string
           tasks: string[]
           technician_id: string | null
+          temperature: number | null
         }
         Insert: {
           alkalinity?: number | null
@@ -213,6 +214,7 @@ export type Database = {
           schedule_id: string
           tasks?: string[]
           technician_id?: string | null
+          temperature?: number | null
         }
         Update: {
           alkalinity?: number | null
@@ -228,6 +230,7 @@ export type Database = {
           schedule_id?: string
           tasks?: string[]
           technician_id?: string | null
+          temperature?: number | null
         }
         Relationships: [
           {
