@@ -29,6 +29,13 @@
       "when": 1791740988587,
       "tag": "0003_visit_time_and_skip",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791899084156,
+      "tag": "0004_add_temperature",
+      "breakpoints": true
     }
   ]
 }
