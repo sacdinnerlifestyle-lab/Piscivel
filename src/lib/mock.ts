@@ -5,6 +5,7 @@ export const params = [
   { key: "free_chlorine", label: "Cloro Livre", min: 1, max: 3, unit: "ppm", step: 0.1 },
   { key: "alkalinity", label: "Alcalinidade Total", min: 80, max: 120, unit: "ppm", step: 1 },
   { key: "cyanuric_acid", label: "Ácido Cianúrico", min: 30, max: 50, unit: "ppm", step: 1 },
+  { key: "temperature", label: "Temperatura", min: 20, max: 32, unit: "°C", step: 0.5 },
 ] as const;
 export type ParamKey = (typeof params)[number]["key"];
 export const inRange = (k: ParamKey, v: number | null | undefined) => {
@@ -12,8 +13,8 @@ export const inRange = (k: ParamKey, v: number | null | undefined) => {
   const p = params.find((x) => x.key === k)!;
   return v >= p.min && v <= p.max;
 };
-export const chems = ["Cloro granulado", "Clarificante", "Barrilha", "Algicida", "Redutor de pH", "Sulfato de alumínio"];
-export const tasks = ["Peneiramento", "Escovação", "Aspiração ao fundo", "Limpeza de skimmer/pré-filtro", "Retrolavagem"];
+export const chems = ["Cloro granulado", "Clarificante", "Barrilha", "Elevador de alcalinidade", "Algicida", "Redutor de pH", "Sulfato de alumínio"];
+export const tasks = ["Peneiramento", "Escovação", "Aspiração filtrando", "Aspiração drenando", "Limpeza de skimmer/pré-filtro", "Retrolavagem"];
 /** Volume em m³ = comprimento × largura × profundidade média (metros), 1 casa decimal. */
 export function poolVolume(c: number, l: number, p: number) {
   if (!(c > 0 && l > 0 && p > 0)) return null;

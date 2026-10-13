@@ -62,7 +62,7 @@ function Visita() {
       const [before, after] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois")]);
       const { error } = await supabase.from("visit_reports").upsert({
         schedule_id: id, technician_id: me.user.id,
-        ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"),
+        ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), temperature: num("temperature"),
         chemicals: Object.fromEntries(Object.entries(used).filter(([, q]) => q)), tasks: done,
         photo_before: before, photo_after: after,
       }, { onConflict: "schedule_id" });

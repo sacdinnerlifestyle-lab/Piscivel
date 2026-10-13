@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/admin/tecnico/$id")({
   component: TecnicoVisitas,
 });
 
-type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null };
+type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; temperature: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null };
 type Preview = { text: string; url: string; before: string | null; after: string | null; title: string };
 
 function TecnicoVisitas() {
@@ -25,7 +25,7 @@ function TecnicoVisitas() {
   });
   const { data: list = [], isLoading } = useQuery({
     queryKey: ["tech-visits", id],
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, chemicals, tasks, notes, photo_before, photo_after)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, temperature, chemicals, tasks, notes, photo_before, photo_after)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
   });
 
   const shown = list.filter((v) => filter === "todas" || (filter === "concluida" ? v.status === "concluida" : v.status !== "concluida"));
@@ -44,6 +44,7 @@ function TecnicoVisitas() {
       `*Análise da água*`,
       `pH: ${r.ph ?? "—"} | Cloro livre: ${r.free_chlorine ?? "—"} ppm`,
       `Alcalinidade: ${r.alkalinity ?? "—"} ppm | Ác. cianúrico: ${r.cyanuric_acid ?? "—"} ppm`,
+      `Temperatura: ${r.temperature ?? "—"} °C`,
       chem && `\n*Produtos aplicados*\n${chem}`,
       r.tasks?.length ? `\n*Serviços realizados*\n${r.tasks.map((t) => `✓ ${t}`).join("\n")}` : "",
       r.notes ? `\nObservações: ${r.notes}` : "",
