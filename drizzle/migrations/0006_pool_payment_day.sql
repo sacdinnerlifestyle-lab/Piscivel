@@ -1,0 +1,1 @@
+ALTER TABLE public.swimming_pools ADD COLUMN payment_day smallint CHECK (payment_day BETWEEN 1 AND 31), ADD COLUMN monthly_fee numeric;

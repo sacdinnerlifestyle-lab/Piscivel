@@ -43,6 +43,13 @@
       "when": 1792010114783,
       "tag": "0005_calcium_machine_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792012918816,
+      "tag": "0006_pool_payment_day",
+      "breakpoints": true
     }
   ]
 }
