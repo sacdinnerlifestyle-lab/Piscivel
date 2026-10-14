@@ -34,6 +34,7 @@
   --color-ice: var(--ice);
   --color-petrol: var(--petrol);
   --color-success: var(--success);
+  --color-resolved: oklch(0.6 0.16 150);
 }
 
 :root {
