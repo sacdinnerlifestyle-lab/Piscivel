@@ -19,16 +19,17 @@ function Dashboard() {
     queryFn: async () => {
       const from = startOfDay().toISOString(), to = addDays(startOfDay(), 1).toISOString();
       const since = addDays(startOfDay(), -30).toISOString();
-      const [today, clients, reports, techs, pools] = await Promise.all([
+      const [today, clients, reports, techs, pools, overdue] = await Promise.all([
         supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
         supabase.from("swimming_pools").select("id, name, address, payment_day, monthly_fee, client:clients(name, phone)").not("payment_day", "is", null),
+        supabase.from("schedules").select("id, scheduled_at, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").lt("scheduled_at", from).neq("status", "concluida").order("scheduled_at", { ascending: false }).limit(100),
       ]);
       const now = startOfDay(), limit = addDays(now, 7);
       const dues = (pools.data ?? []).map((p) => ({ ...p, due: nextDueDate(p.payment_day!, now) })).filter((p) => p.due < limit).sort((a, b) => +a.due - +b.due);
-      return { today: today.data ?? [], clients: clients.count ?? 0, reports: reports.data ?? [], techs: techs.count ?? 0, dues };
+      return { today: today.data ?? [], clients: clients.count ?? 0, reports: reports.data ?? [], techs: techs.count ?? 0, dues, overdue: overdue.data ?? [] };
     },
   });
 
@@ -61,6 +62,21 @@ function Dashboard() {
   );
   return (
     <AdminShell title="Visão geral de hoje">
+      {(data?.overdue ?? []).length > 0 && (
+        <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-5 mb-6">
+          <h2 className="font-semibold text-destructive mb-1">Visitas atrasadas não concluídas ({data!.overdue.length})</h2>
+          <p className="text-xs text-muted-foreground mb-3">Pergunte ao técnico se foi e esqueceu de marcar, ou por que não foi.</p>
+          <div className="divide-y divide-destructive/20">
+            {data!.overdue.map((v) => (
+              <div key={v.id} className="py-2.5 flex items-center gap-4">
+                <span className="text-sm font-mono font-semibold text-destructive w-14">{new Date(v.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}</div></div>
+                <span className="text-xs font-semibold text-destructive">Não feita</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => {
           const inner = (<>
