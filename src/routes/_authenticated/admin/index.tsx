@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { AdminShell, StatusBadge, Empty, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { inRange } from "@/lib/mock";
+import { inRange, nextDueDate } from "@/lib/mock";
 import { CalendarCheck, Droplet, Users, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -18,13 +18,16 @@ function Dashboard() {
     queryFn: async () => {
       const from = startOfDay().toISOString(), to = addDays(startOfDay(), 1).toISOString();
       const since = addDays(startOfDay(), -30).toISOString();
-      const [today, clients, reports, techs] = await Promise.all([
+      const [today, clients, reports, techs, pools] = await Promise.all([
         supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
+        supabase.from("swimming_pools").select("id, name, address, payment_day, monthly_fee, client:clients(name, phone)").not("payment_day", "is", null),
       ]);
-      return { today: today.data ?? [], clients: clients.count ?? 0, reports: reports.data ?? [], techs: techs.count ?? 0 };
+      const now = startOfDay(), limit = addDays(now, 7);
+      const dues = (pools.data ?? []).map((p) => ({ ...p, due: nextDueDate(p.payment_day!, now) })).filter((p) => p.due < limit).sort((a, b) => +a.due - +b.due);
+      return { today: today.data ?? [], clients: clients.count ?? 0, reports: reports.data ?? [], techs: techs.count ?? 0, dues };
     },
   });
 
@@ -86,6 +89,20 @@ function Dashboard() {
             </div>
           )}
         </div>
+      </div>
+      <div className="glass p-5 mt-6">
+        <h2 className="font-semibold mb-4">Mensalidades que vencem nos próximos 7 dias</h2>
+        {(data?.dues ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma mensalidade vencendo esta semana.</p> : (
+          <div className="divide-y">
+            {data!.dues.map((p) => (
+              <div key={p.id} className="py-3 flex items-center gap-4">
+                <span className="text-sm font-mono text-muted-foreground w-14">{p.due.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                <div className="flex-1 min-w-0"><div className="font-medium truncate">{p.client?.name}{p.name ? ` · ${p.name}` : ""}</div><div className="text-xs text-muted-foreground">Vence todo dia {p.payment_day}</div></div>
+                {p.monthly_fee != null && <span className="font-semibold">{Number(p.monthly_fee).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </AdminShell>
   );
