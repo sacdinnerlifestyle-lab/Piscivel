@@ -96,13 +96,20 @@ function Visita() {
 
       <section className={card}>
         <h2 className="font-semibold">Parâmetros da água</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           {params.map((p) => { const s = inRange(p.key as ParamKey, num(p.key)); return (
-            <label key={p.key} className={`rounded-xl border-2 p-3 bg-ice ${s === true ? "border-sky" : s === false ? "border-petrol" : "border-transparent"}`}>
-              <div className="text-xs text-muted-foreground">{p.label}</div>
-              <input inputMode="decimal" type="number" step={p.step} value={vals[p.key] ?? ""} onChange={(e) => setVals({ ...vals, [p.key]: e.target.value })} className="w-full bg-transparent text-xl font-bold outline-none" placeholder="—" />
-              <div className={`text-[11px] font-medium ${s === false ? "text-petrol" : "text-sky"}`}>{s === null ? `Ideal ${p.min}–${p.max} ${p.unit}` : s ? "Equilibrado" : "Fora do padrão"}</div>
-            </label>
+            <div key={p.key} className={`rounded-xl border-2 p-3 bg-ice ${s === true ? "border-sky" : s === false ? "border-petrol" : "border-transparent"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium">{p.label}</div>
+                <input aria-label={p.label} inputMode="decimal" type="number" step={p.step} value={vals[p.key] ?? ""} onChange={(e) => setVals({ ...vals, [p.key]: e.target.value })} className="w-20 bg-transparent text-right text-xl font-bold outline-none" placeholder="—" />
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {p.options.map((o) => { const sel = num(p.key) === o; const ok = o >= p.min && o <= p.max; return (
+                  <button type="button" key={o} onClick={() => setVals({ ...vals, [p.key]: String(o) })} className={`min-w-11 px-2.5 py-1.5 rounded-lg text-sm font-semibold border ${sel ? "bg-primary text-primary-foreground border-primary" : ok ? "bg-background" : "bg-background text-muted-foreground"}`}>{String(o).replace(".", ",")}</button>
+                ); })}
+              </div>
+              <div className={`text-[11px] font-medium mt-1.5 ${s === false ? "text-petrol" : "text-sky"}`}>{s === null ? `Ideal ${p.min}–${p.max} ${p.unit}` : s ? "Equilibrado" : "Fora do padrão"}</div>
+            </div>
           ); })}
         </div>
       </section>
@@ -125,12 +132,12 @@ function Visita() {
       </section>
 
       <section className={card}>
-        <h2 className="font-semibold">Fotos <span className="text-xs text-muted-foreground font-normal">(Antes e Depois obrigatórias)</span></h2>
+        <h2 className="font-semibold">Fotos <span className="text-xs text-muted-foreground font-normal">(Antes e Depois obrigatórias · câmera ou galeria)</span></h2>
         <div className="grid grid-cols-3 gap-3">
           {(["antes", "depois", "maquinas"] as const).map((k) => (
             <label key={k} className="aspect-square rounded-xl border-2 border-dashed bg-ice grid place-items-center overflow-hidden cursor-pointer">
               {files[k] ? <img src={URL.createObjectURL(files[k]!)} alt={k} className="size-full object-cover" /> : <div className="text-center text-sm text-muted-foreground"><Camera className="size-6 mx-auto mb-1 text-sky" />{k === "antes" ? "Antes" : k === "depois" ? "Depois" : "Casa de Máquinas"}</div>}
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFiles({ ...files, [k]: f }); }} />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFiles({ ...files, [k]: f }); }} />
             </label>
           ))}
         </div>
