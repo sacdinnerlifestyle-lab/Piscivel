@@ -26,7 +26,7 @@ const poolSchema = z.object({
   coating: z.string().max(40),
 });
 
-type PoolInput = { client_id: string; name: string | null; address: string | null; coating: string; dimensions: string | null; volume_m3: number };
+type PoolInput = { client_id: string; name: string | null; address: string | null; coating: string; dimensions: string | null; volume_m3: number; payment_day: number | null; monthly_fee: number | null };
 
 function Clientes() {
   const qc = useQueryClient();
@@ -76,7 +76,12 @@ function Clientes() {
   const readPool = (f: FormData, dims: ReturnType<typeof usePoolDims>) => {
     const r = poolSchema.safeParse(Object.fromEntries(f));
     if (!r.success || dims.volume == null) return null;
-    return { name: r.data.pool_name || null, address: r.data.pool_address || null, coating: r.data.coating, dimensions: dims.dimensions, volume_m3: dims.volume };
+    const day = parseInt(String(f.get("payment_day") ?? ""), 10);
+    const fee = parseFloat(String(f.get("monthly_fee") ?? "").replace(/\./g, "").replace(",", "."));
+    return {
+      name: r.data.pool_name || null, address: r.data.pool_address || null, coating: r.data.coating, dimensions: dims.dimensions, volume_m3: dims.volume,
+      payment_day: day >= 1 && day <= 31 ? day : null, monthly_fee: fee > 0 ? fee : null,
+    };
   };
 
   return (
@@ -123,6 +128,7 @@ function Clientes() {
                           <span className="bg-secondary px-2 py-0.5 rounded-full">{p.coating}</span>
                           {p.dimensions && <span className="bg-secondary px-2 py-0.5 rounded-full">{p.dimensions}</span>}
                           <span className="bg-aqua text-abyss px-2 py-0.5 rounded-full font-semibold">{p.volume_m3} m³</span>
+                          {p.payment_day && <span className="bg-secondary px-2 py-0.5 rounded-full">Vence dia {p.payment_day}{p.monthly_fee ? ` · ${Number(p.monthly_fee).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : ""}</span>}
                         </div>
                       </div>
                       {c.swimming_pools.length > 1 && (

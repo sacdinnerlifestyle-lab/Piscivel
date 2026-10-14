@@ -132,7 +132,9 @@ export type Database = {
           created_at: string
           dimensions: string | null
           id: string
+          monthly_fee: number | null
           name: string | null
+          payment_day: number | null
           volume_m3: number
         }
         Insert: {
@@ -142,7 +144,9 @@ export type Database = {
           created_at?: string
           dimensions?: string | null
           id?: string
+          monthly_fee?: number | null
           name?: string | null
+          payment_day?: number | null
           volume_m3?: number
         }
         Update: {
@@ -152,7 +156,9 @@ export type Database = {
           created_at?: string
           dimensions?: string | null
           id?: string
+          monthly_fee?: number | null
           name?: string | null
+          payment_day?: number | null
           volume_m3?: number
         }
         Relationships: [

@@ -33,3 +33,12 @@ export function recurringDates(start: Date, weekdays: number[], time: string, we
   }
   return out;
 }
+
+/** Próxima data de vencimento (dia do mês) a partir de `from`; meses curtos usam o último dia. */
+export function nextDueDate(day: number, from: Date) {
+  const base = new Date(from); base.setHours(0, 0, 0, 0);
+  const make = (y: number, m: number) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()));
+  let d = make(base.getFullYear(), base.getMonth());
+  if (d < base) d = make(base.getFullYear(), base.getMonth() + 1);
+  return d;
+}
