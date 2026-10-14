@@ -38,6 +38,10 @@ function Dashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
+  const [resolved, setResolved] = useState<string[]>([]);
+  useEffect(() => { try { setResolved(JSON.parse(localStorage.getItem("piscivel-resolved-overdue") ?? "[]")); } catch { /* ignore */ } }, []);
+  const resolve = (id: string) => setResolved((r) => { const n = [...r, id]; localStorage.setItem("piscivel-resolved-overdue", JSON.stringify(n)); return n; });
+  const overdue = (data?.overdue ?? []).filter((v) => !resolved.includes(v.id));
   const today = data?.today ?? [];
   const done = today.filter((v) => v.status === "concluida").length;
   const reps = data?.reports ?? [];
@@ -62,16 +66,17 @@ function Dashboard() {
   );
   return (
     <AdminShell title="Visão geral de hoje">
-      {(data?.overdue ?? []).length > 0 && (
+      {overdue.length > 0 && (
         <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-5 mb-6">
-          <h2 className="font-semibold text-destructive mb-1">Visitas atrasadas não concluídas ({data!.overdue.length})</h2>
+          <h2 className="font-semibold text-destructive mb-1">Visitas atrasadas não concluídas ({overdue.length})</h2>
           <p className="text-xs text-muted-foreground mb-3">Pergunte ao técnico se foi e esqueceu de marcar, ou por que não foi.</p>
           <div className="divide-y divide-destructive/20">
-            {data!.overdue.map((v) => (
+            {overdue.map((v) => (
               <div key={v.id} className="py-2.5 flex items-center gap-4">
                 <span className="text-sm font-mono font-semibold text-destructive w-14">{new Date(v.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
                 <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}</div></div>
-                <span className="text-xs font-semibold text-destructive">Não feita</span>
+                <span className="text-xs font-semibold text-destructive hidden sm:inline">Não feita</span>
+                <button onClick={() => resolve(v.id)} className="rounded-lg bg-resolved text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90">Resolvido</button>
               </div>
             ))}
           </div>
