@@ -20,6 +20,14 @@ export function PoolFields({ pool, addressHint }: { pool: ReturnType<typeof useP
       <input name="pool_name" maxLength={60} placeholder="Nome da piscina (ex: Casa da praia)" className={inputCls} />
       <input name="pool_address" maxLength={255} placeholder={addressHint ?? "Endereço da piscina"} className={inputCls} />
       <select name="coating" className={inputCls}>{coatings.map((t) => <option key={t}>{t}</option>)}</select>
+      <label className="text-xs text-muted-foreground space-y-1">
+        <span>Dia de vencimento da mensalidade</span>
+        <input name="payment_day" type="number" min={1} max={31} placeholder="Ex: 10" className={inputCls} />
+      </label>
+      <label className="text-xs text-muted-foreground space-y-1">
+        <span>Valor da mensalidade (R$)</span>
+        <input name="monthly_fee" inputMode="decimal" placeholder="Ex: 250,00" className={inputCls} />
+      </label>
       <div className="sm:col-span-2 lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
         {([["c", "Comprimento (m)"], ["l", "Largura (m)"], ["p", "Profundidade média (m)"]] as const).map(([k, label]) => (
           <label key={k} className="text-xs text-muted-foreground space-y-1">
