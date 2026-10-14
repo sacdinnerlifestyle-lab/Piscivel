@@ -27,7 +27,7 @@ function Cliente() {
         supabase.from("schedules").select("scheduled_at, pool_id, skip_note").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at"),
         supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, visited_at, pool_id, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(60),
       ]);
-      const withPhotos = await Promise.all((reports ?? []).map(async (r) => ({ ...r, before: await signedUrl(r.photo_before), after: await signedUrl(r.photo_after) })));
+      const withPhotos = await Promise.all((reports ?? []).map(async (r) => ({ ...r, before: await signedUrl(r.photo_before), after: await signedUrl(r.photo_after), machine: await signedUrl(r.photo_machine) })));
       return { client, next: next ?? [], reports: withPhotos };
     },
   });
@@ -99,10 +99,11 @@ function Cliente() {
                       <div><div className="text-xs text-muted-foreground mb-1">Serviços</div>{r.tasks.join(" · ") || "—"}</div>
                       <div><div className="text-xs text-muted-foreground mb-1">Produtos aplicados</div>{Object.entries((r.chemicals ?? {}) as Record<string, string>).map(([k, q]) => `${k} ${q}`).join(" · ") || "—"}</div>
                     </div>
-                    {(r.before || r.after) && (
-                      <div className="grid grid-cols-2 gap-3 mt-4">
+                    {(r.before || r.after || r.machine) && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                         {r.before && <figure><img src={r.before} alt="Antes" className="rounded-xl aspect-video object-cover w-full" /><figcaption className="text-xs text-muted-foreground mt-1">Antes</figcaption></figure>}
                         {r.after && <figure><img src={r.after} alt="Depois" className="rounded-xl aspect-video object-cover w-full" /><figcaption className="text-xs text-muted-foreground mt-1">Depois</figcaption></figure>}
+                        {r.machine && <figure><img src={r.machine} alt="Casa de Máquinas" className="rounded-xl aspect-video object-cover w-full" /><figcaption className="text-xs text-muted-foreground mt-1">Casa de Máquinas</figcaption></figure>}
                       </div>
                     )}
                   </div>

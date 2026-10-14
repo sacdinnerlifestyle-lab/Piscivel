@@ -24,7 +24,7 @@ function Visita() {
   const [vals, setVals] = useState<Record<string, string>>({});
   const [used, setUsed] = useState<Record<string, string>>({});
   const [done, setDone] = useState<string[]>([]);
-  const [files, setFiles] = useState<{ antes?: File; depois?: File }>({});
+  const [files, setFiles] = useState<{ antes?: File; depois?: File; maquinas?: File }>({});
   const [saving, setSaving] = useState(false);
   const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
 
@@ -59,12 +59,12 @@ function Visita() {
         if (error) throw error;
         return path;
       };
-      const [before, after] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois")]);
+      const [before, after, machine] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null)]);
       const { error } = await supabase.from("visit_reports").upsert({
         schedule_id: id, technician_id: me.user.id,
-        ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), temperature: num("temperature"),
+        ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), calcium_hardness: num("calcium_hardness"), temperature: num("temperature"),
         chemicals: Object.fromEntries(Object.entries(used).filter(([, q]) => q)), tasks: done,
-        photo_before: before, photo_after: after,
+        photo_before: before, photo_after: after, photo_machine: machine,
       }, { onConflict: "schedule_id" });
       if (error) throw error;
       const [hh, mm] = visitTime.split(":").map(Number);
@@ -125,11 +125,11 @@ function Visita() {
       </section>
 
       <section className={card}>
-        <h2 className="font-semibold">Fotos <span className="text-xs text-muted-foreground font-normal">(obrigatórias)</span></h2>
-        <div className="grid grid-cols-2 gap-3">
-          {(["antes", "depois"] as const).map((k) => (
+        <h2 className="font-semibold">Fotos <span className="text-xs text-muted-foreground font-normal">(Antes e Depois obrigatórias)</span></h2>
+        <div className="grid grid-cols-3 gap-3">
+          {(["antes", "depois", "maquinas"] as const).map((k) => (
             <label key={k} className="aspect-square rounded-xl border-2 border-dashed bg-ice grid place-items-center overflow-hidden cursor-pointer">
-              {files[k] ? <img src={URL.createObjectURL(files[k]!)} alt={k} className="size-full object-cover" /> : <div className="text-center text-sm text-muted-foreground"><Camera className="size-6 mx-auto mb-1 text-sky" />{k === "antes" ? "Antes" : "Depois"}</div>}
+              {files[k] ? <img src={URL.createObjectURL(files[k]!)} alt={k} className="size-full object-cover" /> : <div className="text-center text-sm text-muted-foreground"><Camera className="size-6 mx-auto mb-1 text-sky" />{k === "antes" ? "Antes" : k === "depois" ? "Depois" : "Casa de Máquinas"}</div>}
               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFiles({ ...files, [k]: f }); }} />
             </label>
           ))}

@@ -5,6 +5,7 @@ export const params = [
   { key: "free_chlorine", label: "Cloro Livre", min: 1, max: 3, unit: "ppm", step: 0.1 },
   { key: "alkalinity", label: "Alcalinidade Total", min: 80, max: 120, unit: "ppm", step: 1 },
   { key: "cyanuric_acid", label: "Ácido Cianúrico", min: 30, max: 50, unit: "ppm", step: 1 },
+  { key: "calcium_hardness", label: "Dureza Cálcica", min: 200, max: 400, unit: "ppm", step: 1 },
   { key: "temperature", label: "Temperatura", min: 20, max: 32, unit: "°C", step: 0.5 },
 ] as const;
 export type ParamKey = (typeof params)[number]["key"];

@@ -11,8 +11,8 @@ export const Route = createFileRoute("/_authenticated/admin/tecnico/$id")({
   component: TecnicoVisitas,
 });
 
-type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; temperature: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null };
-type Preview = { text: string; url: string; before: string | null; after: string | null; title: string };
+type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; calcium_hardness: number | null; temperature: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null; photo_machine: string | null };
+type Preview = { text: string; url: string; before: string | null; after: string | null; machine: string | null; title: string };
 
 function TecnicoVisitas() {
   const { id } = Route.useParams();
@@ -25,7 +25,7 @@ function TecnicoVisitas() {
   });
   const { data: list = [], isLoading } = useQuery({
     queryKey: ["tech-visits", id],
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, temperature, chemicals, tasks, notes, photo_before, photo_after)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, calcium_hardness, temperature, chemicals, tasks, notes, photo_before, photo_after, photo_machine)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
   });
 
   const shown = list.filter((v) => filter === "todas" || (filter === "concluida" ? v.status === "concluida" : v.status !== "concluida"));
@@ -44,15 +44,16 @@ function TecnicoVisitas() {
       `*Análise da água*`,
       `pH: ${r.ph ?? "—"} | Cloro livre: ${r.free_chlorine ?? "—"} ppm`,
       `Alcalinidade: ${r.alkalinity ?? "—"} ppm | Ác. cianúrico: ${r.cyanuric_acid ?? "—"} ppm`,
+      `Dureza cálcica: ${r.calcium_hardness ?? "—"} ppm`,
       `Temperatura: ${r.temperature ?? "—"} °C`,
       chem && `\n*Produtos aplicados*\n${chem}`,
       r.tasks?.length ? `\n*Serviços realizados*\n${r.tasks.map((t) => `✓ ${t}`).join("\n")}` : "",
       r.notes ? `\nObservações: ${r.notes}` : "",
     ].filter(Boolean).join("\n");
     const phone = (v.pool?.client?.phone ?? "").replace(/\D/g, "").replace(/^55/, "");
-    const [before, after] = await Promise.all([signedUrl(r.photo_before), signedUrl(r.photo_after)]);
+    const [before, after, machine] = await Promise.all([signedUrl(r.photo_before), signedUrl(r.photo_after), signedUrl(r.photo_machine)]);
     setLoadingId(null);
-    setPreview({ text, before, after, title: v.pool?.client?.name ?? "Relatório", url: `https://wa.me/55${phone}?text=${encodeURIComponent(text)}` });
+    setPreview({ text, before, after, machine, title: v.pool?.client?.name ?? "Relatório", url: `https://wa.me/55${phone}?text=${encodeURIComponent(text)}` });
   }
 
   return (
@@ -89,11 +90,11 @@ function TecnicoVisitas() {
               <h2 className="font-semibold text-lg">Conferir relatório — {preview.title}</h2>
               <button onClick={() => setPreview(null)} aria-label="Fechar"><X className="size-5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {(["before", "after"] as const).map((k) => (
+            <div className="grid grid-cols-3 gap-3">
+              {(["before", "after", "machine"] as const).map((k) => (
                 <div key={k}>
-                  <div className="text-xs text-muted-foreground mb-1">{k === "before" ? "Antes" : "Depois"}</div>
-                  {preview[k] ? <img src={preview[k]!} alt={k === "before" ? "Antes" : "Depois"} className="rounded-lg w-full aspect-square object-cover" /> : <div className="rounded-lg aspect-square bg-secondary flex items-center justify-center text-xs text-muted-foreground">Sem foto</div>}
+                  <div className="text-xs text-muted-foreground mb-1">{k === "before" ? "Antes" : k === "after" ? "Depois" : "Casa de Máquinas"}</div>
+                  {preview[k] ? <img src={preview[k]!} alt={k === "before" ? "Antes" : k === "after" ? "Depois" : "Casa de Máquinas"} className="rounded-lg w-full aspect-square object-cover" /> : <div className="rounded-lg aspect-square bg-secondary flex items-center justify-center text-xs text-muted-foreground">Sem foto</div>}
                 </div>
               ))}
             </div>
