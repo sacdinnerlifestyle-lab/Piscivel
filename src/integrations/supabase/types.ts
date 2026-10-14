@@ -186,6 +186,7 @@ export type Database = {
       visit_reports: {
         Row: {
           alkalinity: number | null
+          calcium_hardness: number | null
           chemicals: Json
           created_at: string
           cyanuric_acid: number | null
@@ -195,6 +196,7 @@ export type Database = {
           ph: number | null
           photo_after: string | null
           photo_before: string | null
+          photo_machine: string | null
           schedule_id: string
           tasks: string[]
           technician_id: string | null
@@ -202,6 +204,7 @@ export type Database = {
         }
         Insert: {
           alkalinity?: number | null
+          calcium_hardness?: number | null
           chemicals?: Json
           created_at?: string
           cyanuric_acid?: number | null
@@ -211,6 +214,7 @@ export type Database = {
           ph?: number | null
           photo_after?: string | null
           photo_before?: string | null
+          photo_machine?: string | null
           schedule_id: string
           tasks?: string[]
           technician_id?: string | null
@@ -218,6 +222,7 @@ export type Database = {
         }
         Update: {
           alkalinity?: number | null
+          calcium_hardness?: number | null
           chemicals?: Json
           created_at?: string
           cyanuric_acid?: number | null
@@ -227,6 +232,7 @@ export type Database = {
           ph?: number | null
           photo_after?: string | null
           photo_before?: string | null
+          photo_machine?: string | null
           schedule_id?: string
           tasks?: string[]
           technician_id?: string | null

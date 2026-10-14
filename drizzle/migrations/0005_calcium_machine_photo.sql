@@ -1,0 +1,1 @@
+ALTER TABLE public.visit_reports ADD COLUMN IF NOT EXISTS calcium_hardness numeric; ALTER TABLE public.visit_reports ADD COLUMN IF NOT EXISTS photo_machine text;
