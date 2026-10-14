@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Droplets, LayoutDashboard, Users, CalendarDays, ClipboardCheck, LogOut, UserCog } from "lucide-react";
-import type { ReactNode } from "react";
+import { Droplets, LayoutDashboard, Users, CalendarDays, ClipboardCheck, LogOut, UserCog, Menu, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import type { Status } from "@/lib/mock";
 import { statusLabel } from "@/lib/mock";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,20 +39,46 @@ const nav = [
   { to: "/tecnico", label: "Modo Técnico", icon: ClipboardCheck },
 ] as const;
 
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      {nav.map((n) => (
+        <Link key={n.to} to={n.to} activeOptions={{ exact: true }} onClick={onNavigate}
+          className="flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-lg text-base md:text-sm opacity-75 hover:opacity-100 whitespace-nowrap"
+          activeProps={{ className: "bg-primary opacity-100" }}>
+          <n.icon className="size-5 md:size-4 shrink-0" /><span>{n.label}</span>
+        </Link>
+      ))}
+    </>
+  );
+}
+
 export function AdminShell({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="min-h-screen md:flex">
-      <aside className="bg-deep text-abyss-foreground md:w-64 md:min-h-screen p-5 flex md:flex-col gap-6 items-center md:items-stretch">
+      <header className="md:hidden sticky top-0 z-40 bg-deep text-abyss-foreground px-4 py-3 flex items-center justify-between">
         <Logo light />
-        <nav className="flex md:flex-col gap-1 flex-1 overflow-x-auto">
-          {nav.map((n) => (
-            <Link key={n.to} to={n.to} activeOptions={{ exact: true }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm opacity-75 hover:opacity-100 whitespace-nowrap"
-              activeProps={{ className: "bg-primary opacity-100" }}>
-              <n.icon className="size-4" /><span className="hidden sm:inline">{n.label}</span>
-            </Link>
-          ))}
-        </nav>
+        <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="grid place-items-center size-11 rounded-lg bg-primary/20">
+          <Menu className="size-6" />
+        </button>
+      </header>
+      {open && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-abyss/60" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-deep text-abyss-foreground p-5 flex flex-col gap-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <Logo light />
+              <button onClick={() => setOpen(false)} aria-label="Fechar menu" className="grid place-items-center size-10 rounded-lg"><X className="size-6" /></button>
+            </div>
+            <nav className="flex flex-col gap-1 flex-1"><NavLinks onNavigate={() => setOpen(false)} /></nav>
+            <SignOutButton className="opacity-80 hover:opacity-100 py-3 text-base" />
+          </div>
+        </div>
+      )}
+      <aside className="hidden md:flex bg-deep text-abyss-foreground md:w-64 md:min-h-screen p-5 flex-col gap-6">
+        <Logo light />
+        <nav className="flex flex-col gap-1 flex-1"><NavLinks /></nav>
         <SignOutButton className="opacity-70 hover:opacity-100" />
       </aside>
       <main className="flex-1 p-5 md:p-10 max-w-7xl">
