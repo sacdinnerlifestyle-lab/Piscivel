@@ -203,6 +203,7 @@ export type Database = {
           photo_after: string | null
           photo_before: string | null
           photo_machine: string | null
+          photo_note: string | null
           schedule_id: string
           tasks: string[]
           technician_id: string | null
@@ -221,6 +222,7 @@ export type Database = {
           photo_after?: string | null
           photo_before?: string | null
           photo_machine?: string | null
+          photo_note?: string | null
           schedule_id: string
           tasks?: string[]
           technician_id?: string | null
@@ -239,6 +241,7 @@ export type Database = {
           photo_after?: string | null
           photo_before?: string | null
           photo_machine?: string | null
+          photo_note?: string | null
           schedule_id?: string
           tasks?: string[]
           technician_id?: string | null
