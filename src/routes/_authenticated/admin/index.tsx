@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AdminShell, StatusBadge, Empty, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { inRange, nextDueDate } from "@/lib/mock";
-import { CalendarCheck, Droplet, Users, Activity } from "lucide-react";
+import { CalendarCheck, Droplet, Users, Activity, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — Piscivel" }, { name: "description", content: "Indicadores do dia da operação Piscivel." }, { property: "og:title", content: "Dashboard — Piscivel" }, { property: "og:description", content: "Indicadores do dia." }] }),
@@ -20,7 +20,7 @@ function Dashboard() {
       const from = startOfDay().toISOString(), to = addDays(startOfDay(), 1).toISOString();
       const since = addDays(startOfDay(), -30).toISOString();
       const [today, clients, reports, techs, pools, overdue] = await Promise.all([
-        supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
+        supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician_id, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
@@ -47,7 +47,6 @@ function Dashboard() {
   const reps = data?.reports ?? [];
   const balanced = reps.filter((r) => inRange("ph", r.ph) && inRange("free_chlorine", r.free_chlorine) && inRange("alkalinity", r.alkalinity) && inRange("cyanuric_acid", r.cyanuric_acid)).length;
   const rate = reps.length ? Math.round((balanced / reps.length) * 100) : 0;
-  const lastPh = reps.filter((r) => r.ph != null).slice(-7);
 
   const stats = [
     { label: "Visitas hoje", value: `${done}/${today.length}`, sub: "concluídas / agendadas", icon: CalendarCheck, action: "visits" as const },
@@ -116,8 +115,8 @@ function Dashboard() {
           )}
         </div>
       )}
-      <div className="grid lg:grid-cols-3 gap-4 mt-6">
-        <div className="glass p-5 lg:col-span-2">
+      <div className="mt-6">
+        <div className="glass p-5">
           <h2 className="font-semibold mb-4">Equipes em tempo real</h2>
           {today.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma visita agendada para hoje.</p> : (
             <div className="divide-y">
@@ -126,19 +125,7 @@ function Dashboard() {
                   <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
                   <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
                   <StatusBadge s={v.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="glass p-5">
-          <h2 className="font-semibold mb-4">pH das últimas medições</h2>
-          {lastPh.length === 0 ? <Empty>Sem medições ainda.</Empty> : (
-            <div className="flex items-end gap-2 h-40">
-              {lastPh.map((r, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                  <div className={`w-full rounded-t-md ${inRange("ph", r.ph) ? "bg-gradient-primary" : "bg-petrol"}`} style={{ height: `${Math.max(5, Math.min(100, (Number(r.ph) - 6.5) * 70))}%` }} />
-                  <span className="text-[10px] text-muted-foreground">{r.ph}</span>
+                  {v.status === "concluida" && v.technician_id && <Link to="/admin/tecnico/$id" params={{ id: v.technician_id }} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><FileText className="size-3.5" />Ver relatório</Link>}
                 </div>
               ))}
             </div>
