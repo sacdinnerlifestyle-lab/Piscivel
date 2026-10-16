@@ -11,8 +11,8 @@ export const Route = createFileRoute("/_authenticated/admin/tecnico/$id")({
   component: TecnicoVisitas,
 });
 
-type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; calcium_hardness: number | null; temperature: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null; photo_machine: string | null };
-type Preview = { text: string; url: string; before: string | null; after: string | null; machine: string | null; title: string };
+type Rep = { ph: number | null; free_chlorine: number | null; alkalinity: number | null; cyanuric_acid: number | null; calcium_hardness: number | null; temperature: number | null; chemicals: unknown; tasks: string[]; notes: string | null; photo_before: string | null; photo_after: string | null; photo_machine: string | null; photo_note: string | null };
+type Preview = { text: string; url: string; before: string | null; after: string | null; machine: string | null; note: string | null; title: string };
 
 function TecnicoVisitas() {
   const { id } = Route.useParams();
@@ -25,7 +25,7 @@ function TecnicoVisitas() {
   });
   const { data: list = [], isLoading } = useQuery({
     queryKey: ["tech-visits", id],
-    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, calcium_hardness, temperature, chemicals, tasks, notes, photo_before, photo_after, photo_machine)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
+    queryFn: async () => (await supabase.from("schedules").select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, client:clients(name, phone)), report:visit_reports(ph, free_chlorine, alkalinity, cyanuric_acid, calcium_hardness, temperature, chemicals, tasks, notes, photo_before, photo_after, photo_machine, photo_note)").eq("technician_id", id).order("scheduled_at", { ascending: false }).limit(500)).data ?? [],
   });
 
   const shown = list.filter((v) => filter === "todas" || (filter === "concluida" ? v.status === "concluida" : v.status !== "concluida"));
@@ -51,9 +51,9 @@ function TecnicoVisitas() {
       r.notes ? `\nObservações: ${r.notes}` : "",
     ].filter(Boolean).join("\n");
     const phone = (v.pool?.client?.phone ?? "").replace(/\D/g, "").replace(/^55/, "");
-    const [before, after, machine] = await Promise.all([signedUrl(r.photo_before), signedUrl(r.photo_after), signedUrl(r.photo_machine)]);
+    const [before, after, machine, note] = await Promise.all([signedUrl(r.photo_before), signedUrl(r.photo_after), signedUrl(r.photo_machine), signedUrl(r.photo_note)]);
     setLoadingId(null);
-    setPreview({ text, before, after, machine, title: v.pool?.client?.name ?? "Relatório", url: `https://wa.me/55${phone}?text=${encodeURIComponent(text)}` });
+    setPreview({ text, before, after, machine, note, title: v.pool?.client?.name ?? "Relatório", url: `https://wa.me/55${phone}?text=${encodeURIComponent(text)}` });
   }
 
   return (
@@ -98,6 +98,7 @@ function TecnicoVisitas() {
                 </div>
               ))}
             </div>
+            {preview.note && <div><div className="text-xs text-muted-foreground mb-1">Foto da observação</div><img src={preview.note} alt="Foto da observação" className="rounded-lg max-h-64 object-cover" /></div>}
             <pre className="whitespace-pre-wrap text-sm bg-secondary rounded-lg p-4 font-sans">{preview.text.replace(/\*/g, "")}</pre>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setPreview(null)} className="px-4 py-2.5 text-sm text-muted-foreground">Cancelar</button>
