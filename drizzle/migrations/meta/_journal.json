@@ -50,6 +50,13 @@
       "when": 1792012918816,
       "tag": "0006_pool_payment_day",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792150195227,
+      "tag": "0007_note_photo",
+      "breakpoints": true
     }
   ]
 }

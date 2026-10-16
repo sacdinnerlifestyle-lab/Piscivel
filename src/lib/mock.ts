@@ -15,6 +15,7 @@ export const inRange = (k: ParamKey, v: number | null | undefined) => {
   return v >= p.min && v <= p.max;
 };
 export const chems = ["Cloro granulado", "Clarificante", "Barrilha", "Elevador de alcalinidade", "Elevador de dureza cálcica", "Algicida de manutenção", "Algicida de Choque", "Redutor de pH e Alcalinidade", "Sulfato de alumínio"];
+export const chemUnit: Record<string, string> = { "Cloro granulado": "g", "Barrilha": "g", "Elevador de alcalinidade": "g", "Elevador de dureza cálcica": "g", "Sulfato de alumínio": "g", "Clarificante": "ml", "Algicida de manutenção": "ml", "Algicida de Choque": "ml", "Redutor de pH e Alcalinidade": "ml" };
 export const tasks = ["Peneiramento", "Escovação", "Aspiração filtrando", "Aspiração drenando", "Limpeza de skimmer/pré-filtro", "Limpeza de borda", "Retrolavagem"];
 /** Volume em m³ = comprimento × largura × profundidade média (metros), 1 casa decimal. */
 export function poolVolume(c: number, l: number, p: number) {

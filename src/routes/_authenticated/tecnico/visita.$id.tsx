@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { params, inRange, chems, tasks, type ParamKey } from "@/lib/mock";
+import { params, inRange, chems, chemUnit, tasks, type ParamKey } from "@/lib/mock";
 import { meQuery } from "@/lib/session";
 import { ArrowLeft, Camera, Check, MessageCircle } from "lucide-react";
 
@@ -24,7 +24,8 @@ function Visita() {
   const [vals, setVals] = useState<Record<string, string>>({});
   const [used, setUsed] = useState<Record<string, string>>({});
   const [done, setDone] = useState<string[]>([]);
-  const [files, setFiles] = useState<{ antes?: File; depois?: File; maquinas?: File }>({});
+  const [files, setFiles] = useState<{ antes?: File; depois?: File; maquinas?: File; nota?: File }>({});
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
 
@@ -44,8 +45,8 @@ function Visita() {
   const summary = [
     `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${new Date().toLocaleDateString("pt-BR")} às ${visitTime}`, ``,
     `*Parâmetros da água*`, ...params.map((p) => { const s = inRange(p.key, num(p.key)); return `• ${p.label}: ${vals[p.key] || "-"} ${p.unit} ${s ? "✅" : s === false ? "⚠️" : ""}`; }),
-    ``, `*Produtos aplicados*`, ...Object.entries(used).filter(([, q]) => q).map(([c, q]) => `• ${c}: ${q}`), ``,
-    `*Serviços realizados*`, ...done.map((t) => `✔ ${t}`), ``, `Sua piscina está cristalina! 💧`,
+    ``, `*Produtos aplicados*`, ...Object.entries(used).filter(([, q]) => q).map(([c, q]) => `• ${c}: ${q} ${chemUnit[c] ?? ""}`.trim()), ``,
+    `*Serviços realizados*`, ...done.map((t) => `✔ ${t}`), ``, ...(notes.trim() ? [`*Observações*`, notes.trim(), ``] : []), `Sua piscina está cristalina! 💧`,
   ].join("\n");
 
   async function finish() {
@@ -59,11 +60,11 @@ function Visita() {
         if (error) throw error;
         return path;
       };
-      const [before, after, machine] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null)]);
+      const [before, after, machine, notePhoto] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null), files.nota ? up(files.nota, "observacao") : Promise.resolve(null)]);
       const { error } = await supabase.from("visit_reports").upsert({
         schedule_id: id, technician_id: me.user.id,
         ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), calcium_hardness: num("calcium_hardness"), temperature: num("temperature"),
-        chemicals: Object.fromEntries(Object.entries(used).filter(([, q]) => q)), tasks: done,
+        chemicals: Object.fromEntries(Object.entries(used).filter(([, q]) => q).map(([c, q]) => [c, `${q} ${chemUnit[c] ?? ""}`.trim()])), tasks: done, notes: notes.trim() || null, photo_note: notePhoto,
         photo_before: before, photo_after: after, photo_machine: machine,
       }, { onConflict: "schedule_id" });
       if (error) throw error;
@@ -118,7 +119,7 @@ function Visita() {
         <h2 className="font-semibold">Tratamento químico</h2>
         {chems.map((c) => (
           <div key={c} className="flex items-center gap-3"><span className="flex-1 text-sm">{c}</span>
-            <input value={used[c] ?? ""} maxLength={30} onChange={(e) => setUsed({ ...used, [c]: e.target.value })} placeholder="qtd." className="w-24 rounded-lg border bg-ice px-3 py-1.5 text-sm" /></div>
+            <input value={used[c] ?? ""} maxLength={30} onChange={(e) => setUsed({ ...used, [c]: e.target.value })} inputMode="decimal" placeholder="qtd." className="w-20 rounded-lg border bg-ice px-3 py-1.5 text-sm" /><span className="w-6 text-xs text-muted-foreground">{chemUnit[c]}</span></div>
         ))}
       </section>
 
@@ -141,6 +142,16 @@ function Visita() {
             </label>
           ))}
         </div>
+      </section>
+
+      <section className={card}>
+        <h2 className="font-semibold">Observações <span className="text-xs text-muted-foreground font-normal">(algo anormal na piscina?)</span></h2>
+        <textarea value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Descreva o que aconteceu…" className="w-full rounded-lg border bg-ice px-3 py-2 text-sm" />
+        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed bg-ice p-3 cursor-pointer">
+          {files.nota ? <img src={URL.createObjectURL(files.nota)} alt="Foto da observação" className="size-16 rounded-lg object-cover" /> : <Camera className="size-6 text-sky" />}
+          <span className="text-sm text-muted-foreground">{files.nota ? "Trocar foto da observação" : "Adicionar foto da observação (opcional)"}</span>
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFiles({ ...files, nota: f }); }} />
+        </label>
       </section>
 
       <div className="fixed bottom-0 inset-x-0 p-4 glass rounded-none">
