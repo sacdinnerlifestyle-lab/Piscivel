@@ -1,0 +1,1 @@
+ALTER TABLE public.swimming_pools ADD COLUMN IF NOT EXISTS last_paid_due date;

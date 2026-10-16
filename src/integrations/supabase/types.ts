@@ -132,6 +132,7 @@ export type Database = {
           created_at: string
           dimensions: string | null
           id: string
+          last_paid_due: string | null
           monthly_fee: number | null
           name: string | null
           payment_day: number | null
@@ -144,6 +145,7 @@ export type Database = {
           created_at?: string
           dimensions?: string | null
           id?: string
+          last_paid_due?: string | null
           monthly_fee?: number | null
           name?: string | null
           payment_day?: number | null
@@ -156,6 +158,7 @@ export type Database = {
           created_at?: string
           dimensions?: string | null
           id?: string
+          last_paid_due?: string | null
           monthly_fee?: number | null
           name?: string | null
           payment_day?: number | null
