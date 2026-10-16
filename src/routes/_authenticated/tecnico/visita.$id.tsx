@@ -51,7 +51,6 @@ function Visita() {
 
   async function finish() {
     if (!ready || !me) return;
-    const win = window.open("", "_blank");
     setSaving(true);
     try {
       const up = async (f: File, k: string) => {
@@ -71,13 +70,10 @@ function Visita() {
       const [hh, mm] = visitTime.split(":").map(Number);
       const at = new Date(); at.setHours(hh ?? 0, mm ?? 0, 0, 0);
       await supabase.from("schedules").update({ status: "concluida", visited_at: at.toISOString() }).eq("id", id);
-      const url = `https://wa.me/55${(client?.phone ?? "").replace(/\D/g, "").replace(/^55/, "")}?text=${encodeURIComponent(summary)}`;
-      if (win) win.location.href = url; else window.open(url, "_blank");
       toast.success("Visita encerrada!");
       qc.invalidateQueries();
       nav({ to: "/tecnico" });
     } catch (e) {
-      win?.close();
       toast.error(e instanceof Error ? e.message : "Erro ao salvar");
     } finally { setSaving(false); }
   }
@@ -156,7 +152,7 @@ function Visita() {
 
       <div className="fixed bottom-0 inset-x-0 p-4 glass rounded-none">
         <button onClick={finish} disabled={!ready || saving} className="btn-primary w-full max-w-lg mx-auto py-3.5 flex items-center justify-center gap-2 disabled:opacity-50">
-          <MessageCircle className="size-5" />{saving ? "Salvando…" : ready ? "Encerrar e enviar no WhatsApp" : "Adicione as fotos para encerrar"}
+          <Check className="size-5" />{saving ? "Salvando…" : ready ? "Encerrar visita" : "Adicione as fotos para encerrar"}
         </button>
       </div>
     </div>
