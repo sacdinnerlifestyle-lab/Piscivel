@@ -33,12 +33,12 @@ function TecnicoVisitas() {
   async function saveEdit() {
     if (!edit) return;
     setSaving(true);
-    const upd: Record<string, number | string | null> = { notes: edit.f.notes.trim() || null };
-    for (const [k] of NUMS) { const n = parseFloat(edit.f[k].replace(",", ".")); upd[k] = Number.isFinite(n) ? n : null; }
-    const { error } = await supabase.from("visit_reports").update(upd).eq("id", edit.rid);
+    const upd: Record<string, number | string | null> = { notes: (edit.f["notes"] ?? "").trim() || null };
+    for (const [k] of NUMS) { const n = parseFloat((edit.f[k] ?? "").replace(",", ".")); upd[k] = Number.isFinite(n) ? n : null; }
+    const { error } = await supabase.from("visit_reports").update(upd as never).eq("id", edit.rid);
     const v = list.find((x) => x.id === edit.sid);
-    if (!error && edit.f.time && v) {
-      const d = new Date(v.visited_at ?? v.scheduled_at); const [h, m] = edit.f.time.split(":").map(Number); d.setHours(h, m, 0, 0);
+    if (!error && edit.f["time"] && v) {
+      const d = new Date(v.visited_at ?? v.scheduled_at); const [h, m] = edit.f["time"].split(":").map(Number); d.setHours(h ?? 0, m ?? 0, 0, 0);
       await supabase.from("schedules").update({ visited_at: d.toISOString() }).eq("id", edit.sid);
     }
     setSaving(false);
