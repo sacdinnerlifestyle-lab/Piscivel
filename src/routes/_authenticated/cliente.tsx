@@ -68,22 +68,6 @@ function Cliente() {
 
           {reports.length === 0 ? <Empty>Assim que a primeira visita for concluída, o relatório aparece aqui.</Empty> : (
             <>
-              <section className="glass p-5">
-                <h2 className="font-semibold mb-4">Evolução semanal</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {params.map((p) => (
-                    <div key={p.key} className="bg-ice rounded-xl p-3 border">
-                      <div className="text-xs text-muted-foreground">{p.label}</div>
-                      <div className="text-xl font-bold">{last?.[p.key] ?? "—"} <span className="text-xs font-normal">{p.unit}</span></div>
-                      <div className="flex items-end gap-1 h-10 mt-2">
-                        {[...reports].reverse().map((r, i) => { const val = Number(r[p.key] ?? 0); return (
-                          <div key={i} className={`flex-1 rounded-sm ${inRange(p.key as ParamKey, r[p.key]) === false ? "bg-petrol" : "bg-sky"}`} style={{ height: `${Math.max(5, Math.min(100, (val / (p.max * 1.2)) * 100))}%` }} />
-                        ); })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
 
               <section className="space-y-3">
                 <h2 className="font-semibold">Histórico de visitas</h2>
