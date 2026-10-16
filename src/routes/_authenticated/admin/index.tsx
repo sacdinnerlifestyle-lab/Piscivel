@@ -24,11 +24,19 @@ function Dashboard() {
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
-        supabase.from("swimming_pools").select("id, name, address, payment_day, monthly_fee, client:clients(name, phone)").not("payment_day", "is", null),
+        supabase.from("swimming_pools").select("id, name, address, payment_day, monthly_fee, last_paid_due, client:clients(name, phone)").not("payment_day", "is", null),
         supabase.from("schedules").select("id, scheduled_at, status, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").lt("scheduled_at", from).neq("status", "concluida").order("scheduled_at", { ascending: false }).limit(100),
       ]);
       const now = startOfDay(), limit = addDays(now, 7);
-      const dues = (pools.data ?? []).map((p) => ({ ...p, due: nextDueDate(p.payment_day!, now) })).filter((p) => p.due < limit).sort((a, b) => +a.due - +b.due);
+      const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const dues = (pools.data ?? []).flatMap((p) => {
+        const y = now.getFullYear(), m = now.getMonth();
+        const thisMonth = new Date(y, m, Math.min(p.payment_day!, new Date(y, m + 1, 0).getDate()));
+        if (thisMonth < now && p.last_paid_due !== key(thisMonth)) return [{ ...p, due: thisMonth, dueKey: key(thisMonth), paid: false, late: true }];
+        const due = nextDueDate(p.payment_day!, now);
+        if (due >= limit) return [];
+        return [{ ...p, due, dueKey: key(due), paid: p.last_paid_due === key(due), late: false }];
+      }).sort((a, b) => +a.due - +b.due);
       return { today: today.data ?? [], clients: clients.count ?? 0, reports: reports.data ?? [], techs: techs.count ?? 0, dues, overdue: overdue.data ?? [] };
     },
   });
@@ -38,6 +46,10 @@ function Dashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
+  const markPaid = async (id: string, due: string | null) => {
+    await supabase.from("swimming_pools").update({ last_paid_due: due }).eq("id", id);
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+  };
   const [resolved, setResolved] = useState<string[]>([]);
   useEffect(() => { try { setResolved(JSON.parse(localStorage.getItem("piscivel-resolved-overdue") ?? "[]")); } catch { /* ignore */ } }, []);
   const resolve = (id: string) => setResolved((r) => { const n = [...r, id]; localStorage.setItem("piscivel-resolved-overdue", JSON.stringify(n)); return n; });
@@ -137,10 +149,14 @@ function Dashboard() {
         {(data?.dues ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma mensalidade vencendo esta semana.</p> : (
           <div className="divide-y">
             {data!.dues.map((p) => (
-              <div key={p.id} className="py-3 flex items-center gap-4">
-                <span className="text-sm font-mono text-muted-foreground w-14">{p.due.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
-                <div className="flex-1 min-w-0"><div className="font-medium truncate">{p.client?.name}{p.name ? ` · ${p.name}` : ""}</div><div className="text-xs text-muted-foreground">Vence todo dia {p.payment_day}</div></div>
+              <div key={p.id} className={`py-3 px-3 my-1 rounded-lg flex items-center gap-4 ${p.paid ? "bg-resolved/15" : p.late ? "bg-destructive/10" : ""}`}>
+                <span className={`text-sm font-mono w-14 ${p.late ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{p.due.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                <div className="flex-1 min-w-0"><div className="font-medium truncate">{p.client?.name}{p.name ? ` · ${p.name}` : ""}</div><div className={`text-xs ${p.late ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{p.late ? "Atrasado" : p.paid ? "Pago" : `Vence todo dia ${p.payment_day}`}</div></div>
                 {p.monthly_fee != null && <span className="font-semibold">{Number(p.monthly_fee).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>}
+                <button onClick={() => markPaid(p.id, p.paid ? null : p.dueKey)}
+                  className={`rounded-lg text-xs font-semibold px-3 py-1.5 ${p.paid ? "bg-resolved text-primary-foreground" : p.late ? "bg-destructive text-primary-foreground" : "border hover:bg-secondary"}`}>
+                  {p.paid ? "Pago ✓" : "Pago"}
+                </button>
               </div>
             ))}
           </div>
