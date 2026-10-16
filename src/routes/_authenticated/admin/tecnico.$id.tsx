@@ -153,10 +153,10 @@ function TecnicoVisitas() {
                   <input inputMode="decimal" value={edit.f[k]} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, [k]: e.target.value } })} className="w-full border rounded-lg px-3 py-2 bg-background" /></label>
               ))}
               <label className="text-sm"><span className="text-xs text-muted-foreground">Horário da visita</span>
-                <input type="time" value={edit.f.time} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, time: e.target.value } })} className="w-full border rounded-lg px-3 py-2 bg-background" /></label>
+                <input type="time" value={edit.f["time"]} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, time: e.target.value } })} className="w-full border rounded-lg px-3 py-2 bg-background" /></label>
             </div>
             <label className="text-sm block"><span className="text-xs text-muted-foreground">Observações</span>
-              <textarea rows={3} value={edit.f.notes} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, notes: e.target.value } })} className="w-full border rounded-lg px-3 py-2 bg-background" /></label>
+              <textarea rows={3} value={edit.f["notes"]} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, notes: e.target.value } })} className="w-full border rounded-lg px-3 py-2 bg-background" /></label>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setEdit(null)} className="px-4 py-2.5 text-sm text-muted-foreground">Cancelar</button>
               <button disabled={saving} onClick={saveEdit} className="btn-primary px-4 py-2.5 text-sm">{saving ? "Salvando…" : "Salvar alterações"}</button>
