@@ -57,6 +57,13 @@
       "when": 1792150195227,
       "tag": "0007_note_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792152898585,
+      "tag": "0008_migration",
+      "breakpoints": true
     }
   ]
 }
