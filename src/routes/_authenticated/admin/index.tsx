@@ -161,19 +161,7 @@ function Dashboard() {
                   <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
                   <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
                   <StatusBadge s={v.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="glass p-5">
-          <h2 className="font-semibold mb-4">pH das últimas medições</h2>
-          {lastPh.length === 0 ? <Empty>Sem medições ainda.</Empty> : (
-            <div className="flex items-end gap-2 h-40">
-              {lastPh.map((r, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                  <div className={`w-full rounded-t-md ${inRange("ph", r.ph) ? "bg-gradient-primary" : "bg-petrol"}`} style={{ height: `${Math.max(5, Math.min(100, (Number(r.ph) - 6.5) * 70))}%` }} />
-                  <span className="text-[10px] text-muted-foreground">{r.ph}</span>
+                  {v.status === "concluida" && v.technician_id && <Link to="/admin/tecnico/$id" params={{ id: v.technician_id }} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><FileText className="size-3.5" />Ver relatório</Link>}
                 </div>
               ))}
             </div>
