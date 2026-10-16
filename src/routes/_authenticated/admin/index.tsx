@@ -133,42 +133,6 @@ function Dashboard() {
         </div>
       </div>
       <div className="glass p-5 mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Todas as visitas de hoje ({today.length})</h2>
-            <button onClick={() => setShowVisits(false)} className="text-sm text-muted-foreground hover:underline">Fechar</button>
-          </div>
-          {today.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma visita agendada para hoje.</p> : (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-semibold mb-1">A concluir ({pending.length})</h3>
-                {pending.length === 0 ? <p className="text-sm text-muted-foreground">Todas concluídas.</p> : <div className="divide-y">{pending.map((v) => <Row key={v.id} v={v} />)}</div>}
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Concluídas ({finished.length})</h3>
-                {finished.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma ainda.</p> : <div className="divide-y">{finished.map((v) => <Row key={v.id} v={v} />)}</div>}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      <div className="mt-6">
-        <div className="glass p-5">
-          <h2 className="font-semibold mb-4">Equipes em tempo real</h2>
-          {today.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma visita agendada para hoje.</p> : (
-            <div className="divide-y">
-              {today.map((v) => (
-                <div key={v.id} className="py-3 flex items-center gap-4">
-                  <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
-                  <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
-                  <StatusBadge s={v.status} />
-                  {v.status === "concluida" && v.technician_id && <Link to="/admin/tecnico/$id" params={{ id: v.technician_id }} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><FileText className="size-3.5" />Ver relatório</Link>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="glass p-5 mt-6">
         <h2 className="font-semibold mb-4">Mensalidades que vencem nos próximos 7 dias</h2>
         {(data?.dues ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma mensalidade vencendo esta semana.</p> : (
           <div className="divide-y">
