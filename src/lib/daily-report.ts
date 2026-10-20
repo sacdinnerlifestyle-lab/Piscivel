@@ -16,7 +16,7 @@ async function toJpeg(url: string) {
 }
 
 export async function buildDailyReport(techId: string, techName: string, day: string) {
-  const [y, m, d] = day.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = day.split("-").map(Number);
   const from = new Date(y, m - 1, d), to = new Date(y, m - 1, d + 1);
   const { data, error } = await supabase.from("schedules")
     .select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, address, client:clients(name, address)), report:visit_reports(*)")
