@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { supabase } from "@/integrations/supabase/client";
 import { params, inRange, type ParamKey } from "@/lib/mock";
+import { filterReportVisits } from "@/lib/daily-report-filter";
 
 // Standard PDF fonts only support WinAnsi characters.
 const safe = (s: string) => s.replace(/[^\x20-\x7E\u00A0-\u00FF–—•]/g, "");
@@ -10,19 +11,25 @@ async function toJpeg(url: string) {
   const scale = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
   const c = document.createElement("canvas");
   c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
-  c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
-  const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), "image/jpeg", 0.8));
+  const context = c.getContext("2d");
+  if (!context) throw new Error("Não foi possível preparar a foto.");
+  context.drawImage(img, 0, 0, c.width, c.height);
+  const b = await new Promise<Blob>((resolve, reject) => c.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Não foi possível converter a foto.")), "image/jpeg", 0.8));
   return new Uint8Array(await b.arrayBuffer());
 }
 
-export async function buildDailyReport(techId: string, techName: string, day: string) {
+export async function loadDailyReportVisits(techId: string, day: string) {
   const [y = 0, m = 1, d = 1] = day.split("-").map(Number);
   const from = new Date(y, m - 1, d), to = new Date(y, m - 1, d + 1);
   const { data, error } = await supabase.from("schedules")
-    .select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, address, client:clients(name, address)), report:visit_reports(*)")
+    .select("id, scheduled_at, visited_at, status, skip_note, pool:swimming_pools(name, address, client:clients(id, name, address)), report:visit_reports(*)")
     .eq("technician_id", techId).gte("scheduled_at", from.toISOString()).lt("scheduled_at", to.toISOString()).order("visited_at");
   if (error) throw error;
-  const visits = (data ?? []).map((v) => ({ ...v, report: Array.isArray(v.report) ? v.report[0] : v.report }));
+  return (data ?? []).map((v) => ({ ...v, report: Array.isArray(v.report) ? v.report[0] : v.report }));
+}
+
+export async function buildDailyReport(techId: string, techName: string, day: string, client?: { id: string; name: string }) {
+  const visits = filterReportVisits(await loadDailyReportVisits(techId, day), client?.id);
   const doneCount = visits.filter((v) => v.status === "concluida").length;
   if (!visits.length) return null;
 
@@ -41,9 +48,10 @@ export async function buildDailyReport(techId: string, techName: string, day: st
     lines.push(line);
     for (const l of lines) { ensure(s + 4); page.drawText(l, { x, y: yy - s, size: s, font: f, color: o.c ?? rgb(0.1, 0.1, 0.15) }); yy -= s + 4; }
   };
-  const dateStr = from.toLocaleDateString("pt-BR");
+  const dateStr = new Date(`${day}T12:00:00`).toLocaleDateString("pt-BR");
   text("Piscivel – Relatório diário", { f: bold, s: 20, c: blue });
   text(`Técnico: ${techName}`, { s: 12 }); text(`Data: ${dateStr}`, { s: 12 });
+  text(`Cliente: ${client?.name ?? "Todos os clientes"}`, { s: 12 });
   text(`Visitas: ${doneCount} concluídas de ${visits.length} agendadas`, { s: 12 }); yy -= 10;
 
   for (const [i, v] of visits.entries()) {
@@ -83,7 +91,7 @@ export async function buildDailyReport(techId: string, techName: string, day: st
     yy -= 10;
   }
   const bytes = await pdf.save();
-  return { blob: new Blob([bytes as BlobPart], { type: "application/pdf" }), filename: `relatorio-${safe(techName).replace(/\s+/g, "-").toLowerCase()}-${day}.pdf` };
+  return { blob: new Blob([bytes as BlobPart], { type: "application/pdf" }), filename: `relatorio-${safe(techName).replace(/\s+/g, "-").toLowerCase()}${client ? `-${safe(client.name).replace(/\s+/g, "-").toLowerCase()}` : ""}-${day}.pdf` };
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
