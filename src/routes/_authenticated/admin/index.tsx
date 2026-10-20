@@ -5,6 +5,7 @@ import { AdminShell, StatusBadge, Empty, startOfDay, addDays, fmtTime } from "@/
 import { supabase } from "@/integrations/supabase/client";
 import { inRange, nextDueDate } from "@/lib/mock";
 import { CalendarCheck, Droplet, Users, Activity, FileText } from "lucide-react";
+import { DailyReportButton } from "@/components/DailyReportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — Piscivel" }, { name: "description", content: "Indicadores do dia da operação Piscivel." }, { property: "og:title", content: "Dashboard — Piscivel" }, { property: "og:description", content: "Indicadores do dia." }] }),
@@ -77,6 +78,7 @@ function Dashboard() {
   );
   return (
     <AdminShell title="Visão geral de hoje">
+      <DailyReportButton />
       {overdue.length > 0 && (
         <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-5 mb-6">
           <h2 className="font-semibold text-destructive mb-1">Visitas atrasadas não concluídas ({overdue.length})</h2>
