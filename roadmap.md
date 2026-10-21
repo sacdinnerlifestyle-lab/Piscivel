@@ -1,2 +1,2 @@
-- [ ] Finalizar e verificar PDF com um cliente ou todos os clientes do técnico/dia.
-- [ ] Adicionar data junto ao horário informado pelo técnico e verificar gravação.
+- [x] Finalizar e verificar PDF com um cliente ou todos os clientes do técnico/dia, incluindo fotos reais.
+- [x] Adicionar data junto ao horário informado pelo técnico e verificar gravação e leitura; visita temporária removida.
