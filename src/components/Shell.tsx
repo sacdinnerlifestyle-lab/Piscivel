@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Droplets, LayoutDashboard, Users, CalendarDays, ClipboardCheck, ClipboardList, LogOut, UserCog, Menu, X } from "lucide-react";
+import { Droplets, LayoutDashboard, Users, CalendarDays, CalendarCheck, ClipboardCheck, ClipboardList, LogOut, UserCog, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { Status } from "@/lib/mock";
 import { statusLabel } from "@/lib/mock";
@@ -33,6 +33,7 @@ export function SignOutButton({ className = "" }: { className?: string }) {
 
 const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/hoje", label: "Hoje", icon: CalendarCheck },
   { to: "/admin/clientes", label: "Clientes", icon: Users },
   { to: "/admin/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/admin/visitas", label: "Visitas", icon: ClipboardList },
