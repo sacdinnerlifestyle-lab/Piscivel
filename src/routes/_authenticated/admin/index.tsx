@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AdminShell, StatusBadge, Empty, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { inRange, nextDueDate } from "@/lib/mock";
-import { CalendarCheck, Droplet, Users, Activity, FileText } from "lucide-react";
+import { CalendarCheck, Droplet, Users, Activity, FileText, Pencil } from "lucide-react";
 import { DailyReportButton } from "@/components/DailyReportDialog";
 import { VisitReportDialog } from "@/components/VisitReportDialog";
 
@@ -92,7 +92,17 @@ function Dashboard() {
                 <span className="text-sm font-mono font-semibold text-destructive w-14">{new Date(v.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
                 <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}</div></div>
                 <span className="text-xs font-semibold text-destructive hidden sm:inline">Não feita</span>
-                <button onClick={() => resolve(v.id)} className="rounded-lg bg-resolved text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90">Resolvido</button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/tecnico/visita/$id"
+                    params={{ id: v.id }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-background px-3 py-1.5 text-xs font-semibold text-destructive transition hover:bg-destructive/10"
+                  >
+                    <Pencil className="size-3.5" />
+                    Editar
+                  </Link>
+                  <button onClick={() => resolve(v.id)} className="rounded-lg bg-resolved text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90">Resolvido</button>
+                </div>
               </div>
             ))}
           </div>
