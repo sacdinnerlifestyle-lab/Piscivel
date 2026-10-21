@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
   component: Login,
 });
 
-type Mode = "login" | "forgot" | "signup";
+type Mode = "login" | "forgot";
 
 function Login() {
   const nav = useNavigate();
@@ -51,11 +51,6 @@ function Login() {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
         if (error) throw error;
         setMsg("Enviamos um link de recuperação para seu e-mail.");
-      } else if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { full_name: String(f.get("name")) } } });
-        if (error) throw error;
-        setMsg("Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.");
-        setMode("login");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw new Error("E-mail ou senha incorretos.");
@@ -71,14 +66,13 @@ function Login() {
     <div className="min-h-screen grid place-items-center p-5">
       <div className="glass w-full max-w-md p-8">
         <Logo />
-        <h1 className="text-2xl font-bold mt-8">{mode === "forgot" ? "Recuperar senha" : mode === "signup" ? "Primeiro acesso do gestor" : "Bem-vindo de volta"}</h1>
+        <h1 className="text-2xl font-bold mt-8">{mode === "forgot" ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          {mode === "forgot" ? "Enviaremos um link para seu e-mail." : mode === "signup" ? "A primeira conta criada vira administradora." : "Clientes, técnicos e gestores entram por aqui."}
+          {mode === "forgot" ? "Enviaremos um link para seu e-mail." : "Clientes, técnicos e gestores entram por aqui."}
         </p>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {mode === "signup" && <input name="name" required maxLength={100} placeholder="Seu nome" className={inp} />}
           <input name="email" type="email" required maxLength={255} placeholder="E-mail" autoComplete="email" className={inp} />
-          {mode !== "forgot" && <input name="password" type="password" required minLength={mode === "signup" ? 8 : 1} placeholder="Senha" autoComplete={mode === "signup" ? "new-password" : "current-password"} className={inp} />}
+          {mode !== "forgot" && <input name="password" type="password" required minLength={1} placeholder="Senha" autoComplete="current-password" className={inp} />}
           {mode === "login" && (
             <div className="flex justify-between text-sm">
               <label className="flex items-center gap-2"><input type="checkbox" defaultChecked className="accent-primary" />Lembrar-me</label>
@@ -87,12 +81,10 @@ function Login() {
           )}
           {msg && <p className="text-sm bg-secondary rounded-lg p-3">{msg}</p>}
           <button disabled={busy} className="btn-primary w-full py-3 disabled:opacity-60">
-            {busy ? "Aguarde…" : mode === "forgot" ? "Enviar link" : mode === "signup" ? "Criar conta" : "Entrar"}
+            {busy ? "Aguarde…" : mode === "forgot" ? "Enviar link" : "Entrar"}
           </button>
-          {mode !== "login" ? (
+          {mode !== "login" && (
             <button type="button" onClick={() => setMode("login")} className="w-full text-sm text-muted-foreground">Voltar ao login</button>
-          ) : (
-            <button type="button" onClick={() => setMode("signup")} className="w-full text-xs text-muted-foreground">Primeiro acesso do gestor? Criar conta</button>
           )}
         </form>
         <p className="text-xs text-muted-foreground mt-6 text-center">Logins de clientes e técnicos são criados pelo administrador.</p>
