@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { params, inRange, chems, chemUnit, tasks, type ParamKey } from "@/lib/mock";
 import { meQuery } from "@/lib/session";
+import { techsQuery } from "@/lib/queries";
 import { ArrowLeft, Camera, Check, MessageCircle } from "lucide-react";
 import { localDateKey, visitTimestamp } from "@/lib/visit-datetime";
 import { Button } from "@/components/ui/button";
@@ -19,14 +20,26 @@ function Visita() {
   const qc = useQueryClient();
   const nav = useNavigate();
   const { data: me } = useQuery(meQuery);
+  const userId = me?.user.id;
+  const { data: isManager = false } = useQuery({
+    queryKey: ["manager-role", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId!);
+      if (error) throw error;
+      return (data ?? []).some((entry) => entry.role === "admin");
+    },
+  });
+  const { data: team = [] } = useQuery({ ...techsQuery, enabled: isManager });
   const { data: v, isLoading } = useQuery({
     queryKey: ["schedule", id],
-    queryFn: async () => (await supabase.from("schedules").select("id, status, pool:swimming_pools(name, coating, volume_m3, client:clients(name, phone))").eq("id", id).maybeSingle()).data,
+    queryFn: async () => (await supabase.from("schedules").select("id, status, technician_id, pool:swimming_pools(name, coating, volume_m3, client:clients(name, phone))").eq("id", id).maybeSingle()).data,
   });
   const [vals, setVals] = useState<Record<string, string>>({});
   const [used, setUsed] = useState<Record<string, string>>({});
   const [done, setDone] = useState<string[]>([]);
   const [files, setFiles] = useState<{ antes?: File; depois?: File; maquinas?: File; nota?: File }>({});
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
@@ -37,6 +50,10 @@ function Visita() {
       supabase.from("schedules").update({ status: "em_andamento" }).eq("id", id).then(() => qc.invalidateQueries({ queryKey: ["my-route"] }));
     }
   }, [v?.status, id, qc]);
+
+  useEffect(() => {
+    if (v?.technician_id) setSelectedTechnicianId(v.technician_id);
+  }, [v?.technician_id]);
 
   if (isLoading) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!v) return <div className="p-10 text-center">Visita não encontrada. <Link to="/tecnico" className="text-primary">Voltar</Link></div>;
@@ -55,6 +72,11 @@ function Visita() {
   async function finish() {
     const beforeFile = files.antes, afterFile = files.depois;
     if (!beforeFile || !afterFile || !me) return;
+    const technicianId = isManager ? selectedTechnicianId : me.user.id;
+    if (isManager && !technicianId) {
+      toast.error("Selecione o técnico que realizou a visita.");
+      return;
+    }
     setSaving(true);
     try {
       const visitedAt = visitTimestamp(visitDate, visitTime);
@@ -66,17 +88,21 @@ function Visita() {
       };
       const [before, after, machine, notePhoto] = await Promise.all([up(beforeFile, "antes"), up(afterFile, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null), files.nota ? up(files.nota, "observacao") : Promise.resolve(null)]);
       const { error } = await supabase.from("visit_reports").upsert({
-        schedule_id: id, technician_id: me.user.id,
+        schedule_id: id, technician_id: technicianId,
         ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), calcium_hardness: num("calcium_hardness"), temperature: num("temperature"),
         chemicals: Object.fromEntries(Object.entries(used).filter(([, q]) => q).map(([c, q]) => [c, `${q} ${chemUnit[c] ?? ""}`.trim()])), tasks: done, notes: notes.trim() || null, photo_note: notePhoto,
         photo_before: before, photo_after: after, photo_machine: machine,
       }, { onConflict: "schedule_id" });
       if (error) throw error;
-      const { error: scheduleError } = await supabase.from("schedules").update({ status: "concluida", visited_at: visitedAt }).eq("id", id);
+      const scheduleUpdate = isManager
+        ? { status: "concluida", visited_at: visitedAt, technician_id: technicianId }
+        : { status: "concluida", visited_at: visitedAt };
+      const { error: scheduleError } = await supabase.from("schedules").update(scheduleUpdate).eq("id", id);
       if (scheduleError) throw scheduleError;
       toast.success("Visita encerrada!");
       qc.invalidateQueries();
-      nav({ to: "/tecnico" });
+      if (isManager) nav({ to: "/admin/visitas" });
+      else nav({ to: "/tecnico" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar");
     } finally { setSaving(false); }
@@ -87,6 +113,28 @@ function Visita() {
     <div className="max-w-lg mx-auto p-5 pb-28 space-y-4">
       <Link to="/tecnico" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />Voltar</Link>
       <div><h1 className="text-2xl font-bold">{client?.name}</h1><p className="text-sm text-muted-foreground">{v.pool?.name ? `${v.pool.name} · ` : ""}{v.pool?.coating} · {v.pool?.volume_m3} m³</p></div>
+
+      {isManager && (
+        <section className={card}>
+          <div>
+            <h2 className="font-semibold">Técnico que realizou a visita</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Selecione o técnico responsável por esta visita.</p>
+          </div>
+          <select
+            value={selectedTechnicianId}
+            onChange={(e) => setSelectedTechnicianId(e.target.value)}
+            disabled={saving}
+            className="w-full rounded-lg border bg-ice px-3 py-2.5 text-sm"
+          >
+            <option value="">Selecione o técnico</option>
+            {team.map((technician) => (
+              <option key={technician.id} value={technician.id}>
+                {technician.full_name || technician.email}
+              </option>
+            ))}
+          </select>
+        </section>
+      )}
 
       <section className={card}>
         <label className="flex flex-wrap items-center justify-between gap-3">
@@ -159,8 +207,8 @@ function Visita() {
       </section>
 
       <div className="fixed bottom-0 inset-x-0 p-4 glass rounded-none">
-        <Button onClick={finish} disabled={!ready || !visitDate || !visitTime || saving} className="btn-primary h-auto w-full max-w-lg mx-auto py-3.5 flex items-center justify-center gap-2 disabled:opacity-50">
-          <Check className="size-5" />{saving ? "Salvando…" : ready ? "Encerrar visita" : "Adicione as fotos para encerrar"}
+        <Button onClick={finish} disabled={!ready || !visitDate || !visitTime || (isManager && !selectedTechnicianId) || saving} className="btn-primary h-auto w-full max-w-lg mx-auto py-3.5 flex items-center justify-center gap-2 disabled:opacity-50">
+          <Check className="size-5" />{saving ? "Salvando…" : ready ? isManager && !selectedTechnicianId ? "Selecione o técnico" : "Encerrar visita" : "Adicione as fotos para encerrar"}
         </Button>
       </div>
     </div>
