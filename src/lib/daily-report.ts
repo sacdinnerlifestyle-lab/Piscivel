@@ -145,8 +145,6 @@ export async function buildDailyReport(techId: string, techName: string, day: st
     danger: rgb(0.72, 0.12, 0.12),
     success: rgb(0.08, 0.48, 0.3),
   };
-  const dateStr = new Date(`${day}T12:00:00`).toLocaleDateString("pt-BR");
-
   for (const [index, visit] of visits.entries()) {
     const page = pdf.addPage([W, H]);
     const pool = visit.pool;
@@ -165,9 +163,18 @@ export async function buildDailyReport(techId: string, techName: string, day: st
     const metaH = 52;
     drawCard(page, M, metaY, W - M * 2, metaH, colors.light, colors.border);
     const col = (W - M * 2 - 40) / 3;
+    const performedAt = visit.visited_at
+      ? new Date(visit.visited_at).toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "Não realizada";
     drawField(page, "Cliente", pool?.client?.name ?? "Não informado", M + 14, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
     drawField(page, "Piscina", pool?.name ?? "Piscina sem nome", M + 14 + col + 20, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
-    drawField(page, "Técnico / data", `${techName} · ${dateStr}`, M + 14 + (col + 20) * 2, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
+    drawField(page, "Técnico / realizada em", `${techName} · ${performedAt}`, M + 14 + (col + 20) * 2, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
 
     const bodyY = 222;
     const bodyH = 222;
@@ -211,9 +218,8 @@ export async function buildDailyReport(techId: string, techName: string, day: st
       page.drawText("OBSERVAÇÕES", { x: rightX + 14, y: bodyY + 58, size: 6.5, font: bold, color: colors.muted, characterSpacing: 0.35 });
       drawWrapped(page, report.notes?.trim() || "Nenhuma observação registrada.", { x: rightX + 14, top: bodyY + 45, width: rightW - 28, font, size: 7.4, color: colors.ink, lineGap: 2 });
     } else {
-      drawField(page, "Horário agendado", new Date(visit.scheduled_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), rightX + 14, bodyY + bodyH - 43, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
-      drawField(page, "Endereço", pool?.address || pool?.client?.address || "Não informado", rightX + 14, bodyY + bodyH - 82, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
-      if (visit.skip_note) drawField(page, "Observação", visit.skip_note, rightX + 14, bodyY + bodyH - 125, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
+      drawField(page, "Status", statusText, rightX + 14, bodyY + bodyH - 43, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
+      if (visit.skip_note) drawField(page, "Observação", visit.skip_note, rightX + 14, bodyY + bodyH - 82, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
     }
 
     const photoLabels = [
@@ -236,8 +242,7 @@ export async function buildDailyReport(techId: string, techName: string, day: st
       photoImages.push({ label, image });
     }
     drawPhotoCards(page, photoImages, M, 32, W - M * 2, 174, font, bold, { border: colors.border, muted: colors.muted, text: colors.ink });
-    page.drawText("Documento gerado pelo sistema Piscivel", { x: M, y: 16, size: 6.5, font, color: colors.muted });
-    page.drawText(`Visita agendada para ${dateStr}`, { x: W - M - 115, y: 16, size: 6.5, font, color: colors.muted });
+    page.drawText("Relatório profissional de manutenção", { x: M, y: 16, size: 6.5, font, color: colors.muted });
   }
 
   const bytes = await pdf.save();

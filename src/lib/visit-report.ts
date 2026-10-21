@@ -174,7 +174,7 @@ export async function buildVisitReportPdf(visit: VisitReportVisit, report: Repor
   const col = (W - M * 2 - 40) / 3;
   drawField(page, "Cliente", visit.pool?.client?.name ?? "Não informado", M + 14, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
   drawField(page, "Piscina", visit.pool?.name ?? "Piscina sem nome", M + 14 + col + 20, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
-  drawField(page, "Telefone", visit.pool?.client?.phone ?? "Não informado", M + 14 + (col + 20) * 2, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
+  drawField(page, "Técnico / realizada em", `${visit.technician?.full_name ?? "Não informado"} · ${dateTime(visit.visited_at)}`, M + 14 + (col + 20) * 2, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
 
   const bodyY = 222;
   const bodyH = 222;
@@ -188,10 +188,7 @@ export async function buildVisitReportPdf(visit: VisitReportVisit, report: Repor
   const fieldWidth = (leftW - 42) / 2;
   drawField(page, "Técnico", visit.technician?.full_name ?? "Não informado", M + 14, bodyY + bodyH - 38, fieldWidth, font, bold, { label: colors.muted, text: colors.ink });
   drawField(page, "Status", finished ? "Concluída" : "Não concluída", M + 28 + fieldWidth, bodyY + bodyH - 38, fieldWidth, font, bold, { label: colors.muted, text: colors.ink });
-  drawField(page, "Agendada para", dateTime(visit.scheduled_at), M + 14, bodyY + bodyH - 82, fieldWidth, font, bold, { label: colors.muted, text: colors.ink });
-  drawField(page, "Realizada em", dateTime(visit.visited_at), M + 28 + fieldWidth, bodyY + bodyH - 82, fieldWidth, font, bold, { label: colors.muted, text: colors.ink });
-  drawField(page, "Endereço", visit.pool?.address ?? "Não informado", M + 14, bodyY + bodyH - 126, leftW - 28, font, bold, { label: colors.muted, text: colors.ink });
-  drawField(page, "Relatório criado em", dateTime(report.created_at), M + 14, bodyY + bodyH - 170, leftW - 28, font, bold, { label: colors.muted, text: colors.ink });
+  drawField(page, "Realizada em", dateTime(visit.visited_at), M + 14, bodyY + bodyH - 82, leftW - 28, font, bold, { label: colors.muted, text: colors.ink });
 
   drawSectionTitle(page, "Parâmetros da água", rightX + 14, bodyY + bodyH - 20, bold, colors.blue);
   const parameters = [
