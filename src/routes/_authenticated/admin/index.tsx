@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inRange, nextDueDate } from "@/lib/mock";
 import { CalendarCheck, Droplet, Users, Activity, FileText } from "lucide-react";
 import { DailyReportButton } from "@/components/DailyReportDialog";
+import { VisitReportDialog } from "@/components/VisitReportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — Piscivel" }, { name: "description", content: "Indicadores do dia da operação Piscivel." }, { property: "og:title", content: "Dashboard — Piscivel" }, { property: "og:description", content: "Indicadores do dia." }] }),
@@ -15,13 +16,14 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function Dashboard() {
   const qc = useQueryClient();
   const [showVisits, setShowVisits] = useState(false);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const { data } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
       const from = startOfDay().toISOString(), to = addDays(startOfDay(), 1).toISOString();
       const since = addDays(startOfDay(), -30).toISOString();
       const [today, clients, reports, techs, pools, overdue] = await Promise.all([
-        supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician_id, technician:profiles(full_name), pool:swimming_pools(name, client:clients(name))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
+        supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, status, technician_id, technician:profiles(full_name), pool:swimming_pools(name, address, client:clients(name, phone))").gte("scheduled_at", from).lt("scheduled_at", to).order("scheduled_at"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("active", true),
         supabase.from("visit_reports").select("ph, free_chlorine, alkalinity, cyanuric_acid, created_at").gte("created_at", since).order("created_at"),
         supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tecnico"),
@@ -56,6 +58,7 @@ function Dashboard() {
   const resolve = (id: string) => setResolved((r) => { const n = [...r, id]; localStorage.setItem("piscivel-resolved-overdue", JSON.stringify(n)); return n; });
   const overdue = (data?.overdue ?? []).filter((v) => !resolved.includes(v.id));
   const today = data?.today ?? [];
+  const selectedVisit = today.find((visit) => visit.id === selectedVisitId) ?? null;
   const done = today.filter((v) => v.status === "concluida").length;
   const reps = data?.reports ?? [];
   const balanced = reps.filter((r) => inRange("ph", r.ph) && inRange("free_chlorine", r.free_chlorine) && inRange("alkalinity", r.alkalinity) && inRange("cyanuric_acid", r.cyanuric_acid)).length;
@@ -139,7 +142,7 @@ function Dashboard() {
                   <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
                   <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
                   <StatusBadge s={v.status} />
-                  {v.status === "concluida" && v.technician_id && <Link to="/admin/tecnico/$id" params={{ id: v.technician_id }} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><FileText className="size-3.5" />Ver relatório</Link>}
+                  {v.status === "concluida" && <button type="button" onClick={() => setSelectedVisitId(v.id)} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><FileText className="size-3.5" />Ver relatório</button>}
                 </div>
               ))}
             </div>
@@ -164,6 +167,7 @@ function Dashboard() {
           </div>
         )}
       </div>
+      {selectedVisit && <VisitReportDialog visit={selectedVisit} onClose={() => setSelectedVisitId(null)} />}
     </AdminShell>
   );
 }
