@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Droplets, LayoutDashboard, Users, CalendarDays, ClipboardCheck, LogOut, UserCog, Menu, X } from "lucide-react";
+import { Droplets, LayoutDashboard, Users, CalendarDays, ClipboardCheck, ClipboardList, LogOut, UserCog, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { Status } from "@/lib/mock";
 import { statusLabel } from "@/lib/mock";
@@ -35,6 +35,7 @@ const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/clientes", label: "Clientes", icon: Users },
   { to: "/admin/agenda", label: "Agenda", icon: CalendarDays },
+  { to: "/admin/visitas", label: "Visitas", icon: ClipboardList },
   { to: "/admin/equipe", label: "Equipe", icon: UserCog },
   { to: "/tecnico", label: "Modo Técnico", icon: ClipboardCheck },
 ] as const;
