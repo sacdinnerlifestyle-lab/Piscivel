@@ -13,3 +13,4 @@
 - Accounts for technicians and clients are created only via the admin server function `createAccount` (service role); the first self-signup becomes admin via DB trigger. Why: admin-invite model.
 - Visit photos live in the private `visit-photos` bucket under `<schedule_id>/...`; storage RLS keys off that folder. Why: clients see only their own photos.
 - Daily PDF client options and generation share the technician/day visit query; client filtering is centralized in a tested helper. Why: the selectable clients and exported visits must stay consistent.
+- Technician-entered visit date and time are validated together and stored in `schedules.visited_at`, without changing `scheduled_at`. Why: actual attendance and the planned schedule are distinct.

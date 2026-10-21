@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { params, inRange, chems, chemUnit, tasks, type ParamKey } from "@/lib/mock";
 import { meQuery } from "@/lib/session";
 import { ArrowLeft, Camera, Check, MessageCircle } from "lucide-react";
+import { localDateKey, visitTimestamp } from "@/lib/visit-datetime";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/tecnico/visita/$id")({
-  head: () => ({ meta: [{ title: "Ficha de visita — Piscivel" }, { name: "description", content: "Ficha de registro da visita." }, { property: "og:title", content: "Ficha de visita — Piscivel" }, { property: "og:description", content: "Ficha de registro da visita." }] }),
+  head: () => ({ meta: [{ title: "Ficha de visita — Piscivel" }, { name: "description", content: "Ficha de registro da visita." }, { property: "og:title", content: "Ficha de visita — Piscivel" }, { property: "og:description", content: "Ficha de registro da visita." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Visita,
 });
 
@@ -28,6 +30,7 @@ function Visita() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [visitDate, setVisitDate] = useState(localDateKey);
 
   useEffect(() => {
     if (v?.status === "agendada") {
@@ -43,23 +46,25 @@ function Visita() {
   const client = v.pool?.client;
 
   const summary = [
-    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${new Date().toLocaleDateString("pt-BR")} às ${visitTime}`, ``,
+    `*Piscivel – Relatório de Visita*`, `Cliente: ${client?.name}`, ...(v.pool?.name ? [`Piscina: ${v.pool.name}`] : []), `Data: ${visitDate.split("-").reverse().join("/")} às ${visitTime}`, ``,
     `*Parâmetros da água*`, ...params.map((p) => { const s = inRange(p.key, num(p.key)); return `• ${p.label}: ${vals[p.key] || "-"} ${p.unit} ${s ? "✅" : s === false ? "⚠️" : ""}`; }),
     ``, `*Produtos aplicados*`, ...Object.entries(used).filter(([, q]) => q).map(([c, q]) => `• ${c}: ${q} ${chemUnit[c] ?? ""}`.trim()), ``,
     `*Serviços realizados*`, ...done.map((t) => `✔ ${t}`), ``, ...(notes.trim() ? [`*Observações*`, notes.trim(), ``] : []), `Sua piscina está cristalina! 💧`,
   ].join("\n");
 
   async function finish() {
-    if (!ready || !me) return;
+    const beforeFile = files.antes, afterFile = files.depois;
+    if (!beforeFile || !afterFile || !me) return;
     setSaving(true);
     try {
+      const visitedAt = visitTimestamp(visitDate, visitTime);
       const up = async (f: File, k: string) => {
         const path = `${id}/${k}-${Date.now()}.${f.name.split(".").pop() || "jpg"}`;
         const { error } = await supabase.storage.from("visit-photos").upload(path, f, { upsert: true });
         if (error) throw error;
         return path;
       };
-      const [before, after, machine, notePhoto] = await Promise.all([up(files.antes!, "antes"), up(files.depois!, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null), files.nota ? up(files.nota, "observacao") : Promise.resolve(null)]);
+      const [before, after, machine, notePhoto] = await Promise.all([up(beforeFile, "antes"), up(afterFile, "depois"), files.maquinas ? up(files.maquinas, "maquinas") : Promise.resolve(null), files.nota ? up(files.nota, "observacao") : Promise.resolve(null)]);
       const { error } = await supabase.from("visit_reports").upsert({
         schedule_id: id, technician_id: me.user.id,
         ph: num("ph"), free_chlorine: num("free_chlorine"), alkalinity: num("alkalinity"), cyanuric_acid: num("cyanuric_acid"), calcium_hardness: num("calcium_hardness"), temperature: num("temperature"),
@@ -67,9 +72,8 @@ function Visita() {
         photo_before: before, photo_after: after, photo_machine: machine,
       }, { onConflict: "schedule_id" });
       if (error) throw error;
-      const [hh, mm] = visitTime.split(":").map(Number);
-      const at = new Date(); at.setHours(hh ?? 0, mm ?? 0, 0, 0);
-      await supabase.from("schedules").update({ status: "concluida", visited_at: at.toISOString() }).eq("id", id);
+      const { error: scheduleError } = await supabase.from("schedules").update({ status: "concluida", visited_at: visitedAt }).eq("id", id);
+      if (scheduleError) throw scheduleError;
       toast.success("Visita encerrada!");
       qc.invalidateQueries();
       nav({ to: "/tecnico" });
@@ -85,9 +89,13 @@ function Visita() {
       <div><h1 className="text-2xl font-bold">{client?.name}</h1><p className="text-sm text-muted-foreground">{v.pool?.name ? `${v.pool.name} · ` : ""}{v.pool?.coating} · {v.pool?.volume_m3} m³</p></div>
 
       <section className={card}>
-        <label className="flex items-center justify-between gap-3">
+        <label className="flex flex-wrap items-center justify-between gap-3">
+          <span className="font-semibold">Data da visita</span>
+          <input type="date" required disabled={saving} value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className="min-w-0 max-w-full rounded-lg border bg-ice px-3 py-2 text-lg font-bold" />
+        </label>
+        <label className="flex flex-wrap items-center justify-between gap-3">
           <span className="font-semibold">Horário da visita</span>
-          <input type="time" required value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="rounded-lg border bg-ice px-3 py-2 text-lg font-bold" />
+          <input type="time" required disabled={saving} value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="rounded-lg border bg-ice px-3 py-2 text-lg font-bold" />
         </label>
       </section>
 
@@ -133,7 +141,7 @@ function Visita() {
         <div className="grid grid-cols-3 gap-3">
           {(["antes", "depois", "maquinas"] as const).map((k) => (
             <label key={k} className="aspect-square rounded-xl border-2 border-dashed bg-ice grid place-items-center overflow-hidden cursor-pointer">
-              {files[k] ? <img src={URL.createObjectURL(files[k]!)} alt={k} className="size-full object-cover" /> : <div className="text-center text-sm text-muted-foreground"><Camera className="size-6 mx-auto mb-1 text-sky" />{k === "antes" ? "Antes" : k === "depois" ? "Depois" : "Casa de Máquinas"}</div>}
+              {files[k] ? <img src={URL.createObjectURL(files[k])} alt={k} className="size-full object-cover" /> : <div className="text-center text-sm text-muted-foreground"><Camera className="size-6 mx-auto mb-1 text-sky" />{k === "antes" ? "Antes" : k === "depois" ? "Depois" : "Casa de Máquinas"}</div>}
               <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFiles({ ...files, [k]: f }); }} />
             </label>
           ))}
@@ -151,9 +159,9 @@ function Visita() {
       </section>
 
       <div className="fixed bottom-0 inset-x-0 p-4 glass rounded-none">
-        <button onClick={finish} disabled={!ready || saving} className="btn-primary w-full max-w-lg mx-auto py-3.5 flex items-center justify-center gap-2 disabled:opacity-50">
+        <Button onClick={finish} disabled={!ready || !visitDate || !visitTime || saving} className="btn-primary h-auto w-full max-w-lg mx-auto py-3.5 flex items-center justify-center gap-2 disabled:opacity-50">
           <Check className="size-5" />{saving ? "Salvando…" : ready ? "Encerrar visita" : "Adicione as fotos para encerrar"}
-        </button>
+        </Button>
       </div>
     </div>
   );
