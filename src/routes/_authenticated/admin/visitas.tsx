@@ -174,8 +174,8 @@ function Visitas() {
 
   return (
     <AdminShell title="Visitas">
-      <div className="glass flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+      <div className="glass flex w-full min-w-0 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setWeekStart(addDays(weekStart, -7))}
@@ -200,8 +200,8 @@ function Visitas() {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor="week-picker" className="text-xs font-semibold text-muted-foreground">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <label htmlFor="week-picker" className="text-xs font-semibold text-muted-foreground sm:whitespace-nowrap">
             Ver semana de
           </label>
           <input
@@ -213,19 +213,19 @@ function Visitas() {
               if (!value) return;
               setWeekStart(startOfWeek(new Date(`${value}T12:00:00`)));
             }}
-            className="rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 ring-ring"
+            className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 ring-ring sm:w-auto"
           />
           <button
             type="button"
             onClick={() => setWeekStart(startOfWeek())}
-            className="rounded-lg border bg-background px-3 py-2 text-xs font-semibold transition hover:bg-secondary"
+            className="w-full rounded-lg border bg-background px-3 py-2 text-xs font-semibold transition hover:bg-secondary sm:w-auto"
           >
             Semana atual
           </button>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((item) => (
           <div
             key={item.label}
@@ -244,7 +244,7 @@ function Visitas() {
       {isError && <div className="mt-6"><Empty>Não foi possível carregar as visitas. Tente novamente.</Empty></div>}
 
       {!isLoading && !isError && (
-        <div className="mt-6 grid grid-flow-col auto-cols-[minmax(230px,1fr)] gap-3 overflow-x-auto pb-3 md:grid-flow-row md:auto-cols-auto md:grid-cols-7">
+        <div className="mt-6 grid w-full min-w-0 grid-flow-col auto-cols-[minmax(260px,85vw)] snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 sm:auto-cols-[minmax(280px,1fr)] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 md:overflow-visible md:snap-none lg:grid-cols-4 xl:grid-cols-7">
           {days.map((day) => {
             const key = localDateKey(day);
             const dayVisits = visits.filter((visit) => localDateKey(new Date(visit.scheduled_at)) === key);
@@ -254,7 +254,7 @@ function Visitas() {
             return (
               <section
                 key={key}
-                className={`rounded-2xl border bg-secondary/30 p-2.5 ${isToday ? "ring-2 ring-primary/40" : ""}`}
+                className={`min-w-0 snap-start rounded-2xl border bg-secondary/30 p-2.5 ${isToday ? "ring-2 ring-primary/40" : ""}`}
               >
                 <header className="px-1 pb-2">
                   <div className="flex items-baseline justify-between gap-1">
@@ -287,7 +287,7 @@ function Visitas() {
                     return (
                       <article
                         key={visit.id}
-                        className={`rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-card" : "bg-card"}`}
+                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-card" : "bg-card"}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-mono text-xs font-semibold ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
@@ -295,10 +295,10 @@ function Visitas() {
                           </span>
                           <StatusBadge s={visit.status} />
                         </div>
-                        <div className="mt-2 text-sm font-semibold leading-snug">
+                        <div className="mt-2 break-words text-sm font-semibold leading-snug">
                           {visit.pool?.client?.name ?? "Cliente não informado"}
                         </div>
-                        {visit.pool?.name && <div className="text-xs text-muted-foreground">{visit.pool.name}</div>}
+                        {visit.pool?.name && <div className="break-words text-xs text-muted-foreground">{visit.pool.name}</div>}
                         <div className="mt-1 text-[11px] text-muted-foreground">
                           {visit.technician?.full_name ?? "Sem técnico"}
                         </div>
@@ -355,14 +355,14 @@ function Visitas() {
 
       {selectedVisit && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="visit-report-title"
           onClick={() => setSelectedVisit(null)}
         >
           <div
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+            className="flex min-h-0 max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl sm:max-h-[92vh]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
@@ -383,7 +383,7 @@ function Visitas() {
               </button>
             </div>
 
-            <div className="overflow-y-auto p-5 sm:p-6">
+            <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
               {reportLoading && <Empty>Carregando relatório…</Empty>}
               {reportIsError && <Empty>Não foi possível carregar o relatório desta visita.</Empty>}
               {!reportLoading && !reportIsError && !report && (
@@ -392,7 +392,7 @@ function Visitas() {
 
               {!reportLoading && !reportIsError && report && (
                 <div className="space-y-6">
-                  <section className="grid gap-4 rounded-xl border bg-secondary/20 p-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <section className="grid min-w-0 gap-3 rounded-xl border bg-secondary/20 p-3 sm:gap-4 sm:p-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</div>
                       <div className="mt-1 font-medium">{selectedVisit.pool?.client?.name ?? "Não informado"}</div>
@@ -427,7 +427,7 @@ function Visitas() {
 
                   <section>
                     <h3 className="mb-3 text-lg font-semibold">Parâmetros da água</h3>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
                       {[
                         { label: "pH", value: report.ph },
                         { label: "Cloro livre", value: report.free_chlorine },
