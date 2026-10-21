@@ -72,7 +72,7 @@ function Cliente() {
               <section className="space-y-3">
                 <h2 className="font-semibold">Histórico de visitas</h2>
                 {reports.map((r) => (
-                  <div key={r.id} className="glass p-5">
+                  <div key={r.id} className="glass border-success/40 bg-success/10 p-5">
                     <div className="flex justify-between items-center"><div className="font-semibold">{fmtDate(r.schedule?.visited_at ?? r.schedule?.scheduled_at ?? r.created_at)}{r.schedule?.visited_at ? ` às ${fmtTime(r.schedule.visited_at)}` : ""}</div><span className="text-xs text-muted-foreground">Técnico: {r.schedule?.technician?.full_name ?? "—"}</span></div>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {params.map((p) => { const ok = inRange(p.key, r[p.key]); return (

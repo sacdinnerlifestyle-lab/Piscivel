@@ -287,7 +287,7 @@ function Visitas() {
                     return (
                       <article
                         key={visit.id}
-                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-card" : "bg-card"}`}
+                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-success/10" : "bg-card"}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-mono text-xs font-semibold ${overdue ? "text-destructive" : "text-muted-foreground"}`}>

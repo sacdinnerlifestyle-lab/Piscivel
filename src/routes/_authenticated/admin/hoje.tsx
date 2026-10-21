@@ -130,7 +130,7 @@ function Hoje() {
       {!isLoading && !isError && filteredVisits.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredVisits.map((visit) => (
-            <article key={visit.id} className="rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md">
+            <article key={visit.id} className={`rounded-2xl border p-5 shadow-sm transition hover:shadow-md ${visit.status === "concluida" ? "border-success/40 bg-success/10" : "bg-card"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">

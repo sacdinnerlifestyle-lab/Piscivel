@@ -73,7 +73,7 @@ function Dashboard() {
   const pending = today.filter((v) => v.status !== "concluida");
   const finished = today.filter((v) => v.status === "concluida");
   const Row = ({ v }: { v: (typeof today)[number] }) => (
-    <div className="py-3 flex items-center gap-4">
+    <div className={`rounded-lg px-3 py-3 flex items-center gap-4 ${v.status === "concluida" ? "bg-success/10" : ""}`}>
       <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
       <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
       <StatusBadge s={v.status} />
@@ -148,7 +148,7 @@ function Dashboard() {
           {today.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma visita agendada para hoje.</p> : (
             <div className="divide-y">
               {today.map((v) => (
-                <div key={v.id} className="py-3 flex items-center gap-4">
+                <div key={v.id} className={`rounded-lg px-3 py-3 flex items-center gap-4 ${v.status === "concluida" ? "bg-success/10" : ""}`}>
                   <span className="text-sm font-mono text-muted-foreground w-12">{v.visited_at ? fmtTime(v.visited_at) : "—"}</span>
                   <div className="flex-1 min-w-0"><div className="font-medium truncate">{v.pool?.client?.name}{v.pool?.name ? ` · ${v.pool.name}` : ""}</div><div className="text-xs text-muted-foreground">{v.technician?.full_name ?? "Sem técnico"}{v.skip_note ? ` · remarcada: ${v.skip_note}` : ""}</div></div>
                   <StatusBadge s={v.status} />

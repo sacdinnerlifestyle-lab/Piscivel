@@ -115,7 +115,7 @@ function Agenda() {
                 {days.map((d, i) => (
                   <div key={i} className="border-t p-1.5 space-y-1.5 min-h-20">
                     {sched.filter((s) => s.technician_id === t.id && sameDay(d, s.scheduled_at)).map((v) => (
-                      <div key={v.id} className="bg-ice rounded-lg p-2 text-xs border group">
+                      <div key={v.id} className={`rounded-lg p-2 text-xs border group ${v.status === "concluida" ? "border-success/40 bg-success/10" : "bg-ice"}`}>
                         <div className="font-semibold flex justify-between gap-1">{v.visited_at ? `${fmtTime(v.visited_at)} · ` : ""}{v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}
                           {v.status === "agendada" && <button onClick={() => del.mutate(v.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground" aria-label="Remover"><Trash2 className="size-3" /></button>}
                         </div>

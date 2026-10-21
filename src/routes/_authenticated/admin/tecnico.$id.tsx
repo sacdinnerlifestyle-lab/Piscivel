@@ -103,7 +103,7 @@ function TecnicoVisitas() {
           {shown.map((v) => {
             const hasReport = Array.isArray(v.report) ? v.report.length > 0 : !!v.report;
             return (
-              <div key={v.id} className="p-4 flex flex-wrap items-center gap-3">
+              <div key={v.id} className={`p-4 flex flex-wrap items-center gap-3 ${v.status === "concluida" ? "bg-success/10" : ""}`}>
                 <div className="flex-1 min-w-48">
                   <div className="font-medium">{v.pool?.client?.name}{v.pool?.name && <span className="text-muted-foreground font-normal"> · {v.pool.name}</span>}</div>
                   <div className="text-xs text-muted-foreground">{fmtDate(v.scheduled_at)}{v.visited_at && ` · visitado às ${fmtTime(v.visited_at)}`}</div>

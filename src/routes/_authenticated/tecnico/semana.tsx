@@ -56,7 +56,7 @@ function Semana() {
             {items.map((v) => {
               const addr = v.pool?.address || v.pool?.client?.address;
               return (
-                <div key={v.id} className="glass p-4">
+                <div key={v.id} className={`glass p-4 ${v.status === "concluida" ? "border-success/40 bg-success/10" : ""}`}>
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <div className="font-semibold">{v.pool?.client?.name}</div>
