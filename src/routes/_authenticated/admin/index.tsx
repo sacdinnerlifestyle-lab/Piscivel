@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AdminShell, StatusBadge, Empty, startOfDay, addDays, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { inRange, nextDueDate } from "@/lib/mock";
+import { billKey, monthKey, todayDay, usePayments } from "@/lib/payments";
 import { CalendarCheck, Droplet, Users, Activity, FileText, Pencil } from "lucide-react";
 import { DailyReportButton } from "@/components/DailyReportDialog";
 import { VisitReportDialog } from "@/components/VisitReportDialog";
@@ -49,14 +50,20 @@ function Dashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const markPaid = async (id: string, due: string | null) => {
-    await supabase.from("swimming_pools").update({ last_paid_due: due }).eq("id", id);
+  const { payments, setPaid } = usePayments();
+  const markPaid = async (id: string, dueDate: Date, dueKey: string) => {
+    setPaid(billKey(id, monthKey(dueDate)), todayDay());
+    await supabase.from("swimming_pools").update({ last_paid_due: dueKey }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["dashboard"] });
+    qc.invalidateQueries({ queryKey: ["finance-pools"] });
   };
   const [resolved, setResolved] = useState<string[]>([]);
   useEffect(() => { try { setResolved(JSON.parse(localStorage.getItem("piscivel-resolved-overdue") ?? "[]")); } catch { /* ignore */ } }, []);
   const resolve = (id: string) => setResolved((r) => { const n = [...r, id]; localStorage.setItem("piscivel-resolved-overdue", JSON.stringify(n)); return n; });
   const overdue = (data?.overdue ?? []).filter((v) => !resolved.includes(v.id));
+  const dues = (data?.dues ?? [])
+    .map((p) => ({ ...p, paid: p.paid || Boolean(payments[billKey(p.id, monthKey(p.due))]) }))
+    .filter((p) => !p.paid);
   const today = data?.today ?? [];
   const selectedVisit = today.find((visit) => visit.id === selectedVisitId) ?? null;
   const done = today.filter((v) => v.status === "concluida").length;
@@ -161,16 +168,16 @@ function Dashboard() {
       </div>
       <div className="glass p-5 mt-6">
         <h2 className="font-semibold mb-4">Mensalidades que vencem nos próximos 7 dias</h2>
-        {(data?.dues ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma mensalidade vencendo esta semana.</p> : (
+        {dues.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma mensalidade vencendo esta semana.</p> : (
           <div className="divide-y">
-            {data!.dues.map((p) => (
+            {dues.map((p) => (
               <div key={p.id} className={`py-3 px-3 my-1 rounded-lg flex items-center gap-4 ${p.paid ? "bg-resolved/15" : p.late ? "bg-destructive/10" : ""}`}>
                 <span className={`text-sm font-mono w-14 ${p.late ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{p.due.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
                 <div className="flex-1 min-w-0"><div className="font-medium truncate">{p.client?.name}{p.name ? ` · ${p.name}` : ""}</div><div className={`text-xs ${p.late ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{p.late ? "Atrasado" : p.paid ? "Pago" : `Vence todo dia ${p.payment_day}`}</div></div>
                 {p.monthly_fee != null && <span className="font-semibold">{Number(p.monthly_fee).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>}
-                <button onClick={() => markPaid(p.id, p.paid ? null : p.dueKey)}
-                  className={`rounded-lg text-xs font-semibold px-3 py-1.5 ${p.paid ? "bg-resolved text-primary-foreground" : p.late ? "bg-destructive text-primary-foreground" : "border hover:bg-secondary"}`}>
-                  {p.paid ? "Pago ✓" : "Pago"}
+                <button onClick={() => markPaid(p.id, p.due, p.dueKey)}
+                  className={`rounded-lg text-xs font-semibold px-3 py-1.5 ${p.late ? "bg-destructive text-primary-foreground" : "border hover:bg-secondary"}`}>
+                  Marcar pago
                 </button>
               </div>
             ))}

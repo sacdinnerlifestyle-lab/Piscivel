@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AdminShell, Empty, inputCls } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
+import { billKey, dayFromValue, fmtDayBR, todayDay, usePayments } from "@/lib/payments";
 import { AlertTriangle, CheckCircle2, Clock3, Undo2, Wallet } from "lucide-react";
-
-const STORAGE_KEY = "piscivel.financeiro.pagamentos.v1";
 
 type PoolRow = {
   id: string;
@@ -26,6 +25,7 @@ type Bill = {
   amount: number;
   due: Date;
   paidAt: string | null;
+  paidDay: string;
   status: BillStatus;
 };
 
@@ -60,37 +60,27 @@ function Financeiro() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   });
-  const [payments, setPayments] = useState<Record<string, string>>({});
+  const { payments, setPaid, clearPaid } = usePayments();
   const [statusFilter, setStatusFilter] = useState<"todos" | BillStatus>("todos");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      setPayments(raw ? (JSON.parse(raw) as Record<string, string>) : {});
-    } catch {
-      setPayments({});
-    }
-  }, []);
-
-  const persist = (next: Record<string, string>) => {
-    setPayments(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // armazenamento indisponível: mantém apenas na memória
-    }
-  };
-
-  const markPaid = (key: string) => {
-    persist({ ...payments, [key]: new Date().toISOString() });
+  const markPaid = (key: string, day?: string) => {
+    setPaid(key, day || todayDay());
     toast.success("Mensalidade marcada como paga");
   };
 
+  const changePaidDate = (key: string, day: string) => {
+    if (!day) {
+      clearPaid(key);
+      toast.success("Pagamento desfeito");
+      return;
+    }
+    setPaid(key, day);
+    toast.success(`Data do pagamento atualizada para ${fmtDayBR(day)}`);
+  };
+
   const unmark = (key: string) => {
-    const next = { ...payments };
-    delete next[key];
-    persist(next);
+    clearPaid(key);
     toast.success("Pagamento desfeito");
   };
 
@@ -118,8 +108,9 @@ function Financeiro() {
       .map((pool) => {
         const day = Math.min(Math.max(Number(pool.payment_day ?? 5), 1), lastDay);
         const due = new Date(year, monthNumber - 1, day);
-        const key = `${pool.id}:${month}`;
-        const paidAt = payments[key] ?? null;
+        const key = billKey(pool.id, month);
+        const paidDay = payments[key] ? dayFromValue(payments[key]) : "";
+        const paidAt = paidDay || null;
         const status: BillStatus = paidAt ? "pago" : due.getTime() < today.getTime() ? "atrasado" : "aberto";
         return {
           key,
@@ -128,6 +119,7 @@ function Financeiro() {
           amount: Number(pool.monthly_fee ?? 0),
           due,
           paidAt,
+          paidDay,
           status,
         };
       })
@@ -240,22 +232,23 @@ function Financeiro() {
 
       {!isLoading && !isError && bills.length > 0 && (
         <div className="glass mt-4 overflow-x-auto">
-          <div className="hidden min-w-[720px] grid-cols-[1.5fr_1fr_0.9fr_0.8fr_0.7fr_auto] gap-3 border-b px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
+          <div className="hidden min-w-[860px] grid-cols-[1.4fr_1fr_0.8fr_0.7fr_0.6fr_1fr_auto] gap-3 border-b px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
             <span>Cliente</span>
             <span>Piscina</span>
             <span>Vencimento</span>
             <span className="text-right">Valor</span>
             <span>Status</span>
+            <span>Pagamento</span>
             <span className="text-right">Ação</span>
           </div>
-          <div className="min-w-[720px] divide-y md:min-w-0">
+          <div className="min-w-[860px] divide-y md:min-w-0">
             {filtered.length === 0 && (
               <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma mensalidade encontrada com esses filtros.</div>
             )}
             {filtered.map((bill) => (
               <div
                 key={bill.key}
-                className={`grid gap-2 px-4 py-3 text-sm md:grid-cols-[1.5fr_1fr_0.9fr_0.8fr_0.7fr_auto] md:items-center md:gap-3 ${
+                className={`grid gap-2 px-4 py-3 text-sm md:grid-cols-[1.4fr_1fr_0.8fr_0.7fr_0.6fr_1fr_auto] md:items-center md:gap-3 ${
                   bill.status === "atrasado" ? "bg-destructive/5" : bill.status === "pago" ? "bg-success/5" : ""
                 }`}
               >
@@ -267,6 +260,19 @@ function Financeiro() {
                 <div className="font-semibold md:text-right">{brl(bill.amount)}</div>
                 <div>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeCls[bill.status]}`}>{badgeLabel[bill.status]}</span>
+                </div>
+                <div>
+                  <label htmlFor={`paid-${bill.key}`} className="sr-only">Data do pagamento</label>
+                  <input
+                    id={`paid-${bill.key}`}
+                    type="date"
+                    value={bill.paidDay}
+                    onChange={(event) => changePaidDate(bill.key, event.target.value)}
+                    className={`${inputCls} w-full text-xs md:w-40`}
+                  />
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {bill.paidDay ? `Pago em ${fmtDayBR(bill.paidDay)}` : "Escolha a data para marcar como pago"}
+                  </div>
                 </div>
                 <div className="md:text-right">
                   {bill.paidAt ? (
