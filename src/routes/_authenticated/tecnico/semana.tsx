@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { StatusBadge, Empty, startOfDay, addDays, fmtDate } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/session";
+import { isRainVisit, visitNoteLabel } from "@/lib/rain";
 import { ArrowLeft, MapPin, FastForward } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tecnico/semana")({
@@ -65,7 +66,11 @@ function Semana() {
                     <StatusBadge s={v.status} />
                   </div>
                   {addr && <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2"><MapPin className="size-3.5" />{addr}</a>}
-                  {v.skip_note && <p className="text-xs text-petrol mt-2">Remarcada: {v.skip_note}</p>}
+                  {v.skip_note && (
+                    <p className={`text-xs mt-2 ${isRainVisit(v.skip_note) ? "text-sky font-semibold" : "text-petrol"}`}>
+                      {isRainVisit(v.skip_note) ? "Não realizada por chuva" : `Remarcada: ${visitNoteLabel(v.skip_note)}`}
+                    </p>
+                  )}
                   {i > 0 && v.status === "agendada" && (
                     <button disabled={advance.isPending} onClick={() => { if (confirm("Antecipar esta visita para hoje?")) advance.mutate(v); }} className="w-full mt-3 py-2.5 text-sm font-semibold text-primary flex items-center justify-center gap-2 border rounded-lg"><FastForward className="size-4" />Antecipar para hoje</button>
                   )}

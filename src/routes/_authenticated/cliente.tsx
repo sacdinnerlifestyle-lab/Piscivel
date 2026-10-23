@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { requireRole } from "@/lib/guard";
 import { meQuery, signedUrl } from "@/lib/session";
 import { params, inRange, type ParamKey } from "@/lib/mock";
+import { visitNoteLabel } from "@/lib/rain";
 import { CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
@@ -53,7 +54,7 @@ function Cliente() {
             {pool && <div className="text-sm opacity-80 mt-1">{pool.coating} · {pool.dimensions ? `${pool.dimensions} · ` : ""}{pool.volume_m3} m³{pool.address ? ` · ${pool.address}` : ""}</div>}
             <div className="flex flex-wrap gap-4 mt-4 text-sm">
               {balanced !== null && <span className="flex items-center gap-2">{balanced ? <CheckCircle2 className="size-4 text-aqua" /> : <AlertTriangle className="size-4 text-aqua" />}{balanced ? "Água equilibrada" : "Em correção"}</span>}
-              {nextVisit?.skip_note && <span className="w-full text-xs opacity-90">Aviso do técnico: {nextVisit.skip_note}</span>}
+              {nextVisit?.skip_note && <span className="w-full text-xs opacity-90">Aviso do técnico: {visitNoteLabel(nextVisit.skip_note)}</span>}
               <span className="flex items-center gap-2"><CalendarClock className="size-4 text-aqua" />{nextAt ? `Próxima visita: ${fmtDate(nextAt)}` : "Próxima visita a agendar"}</span>
             </div>
           </div>

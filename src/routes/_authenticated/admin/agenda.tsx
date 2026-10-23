@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { techsQuery } from "@/lib/queries";
 import { Plus, Trash2, Repeat } from "lucide-react";
 import { recurringDates } from "@/lib/mock";
+import { isRainVisit, visitNoteLabel } from "@/lib/rain";
 
 export const Route = createFileRoute("/_authenticated/admin/agenda")({
   head: () => ({ meta: [{ title: "Agenda semanal — Piscivel" }, { name: "description", content: "Distribuição das visitas por técnico." }, { property: "og:title", content: "Agenda semanal — Piscivel" }, { property: "og:description", content: "Distribuição das visitas por técnico." }] }),
@@ -154,7 +155,11 @@ function Agenda() {
                           <button onClick={() => { if (confirm("Remover esta visita da agenda?")) del.mutate(v.id); }} className="shrink-0 text-muted-foreground opacity-60 hover:opacity-100 hover:text-destructive" aria-label="Remover visita"><Trash2 className="size-3" /></button>
                         </div>
                         <div className="mt-1"><StatusBadge s={v.status} /></div>
-                        {v.skip_note && <div className="mt-1 text-[11px] text-petrol">Remarcada: {v.skip_note}</div>}
+                        {v.skip_note && (
+                          <div className={`mt-1 text-[11px] ${isRainVisit(v.skip_note) ? "text-sky font-semibold" : "text-petrol"}`}>
+                            {isRainVisit(v.skip_note) ? "Não realizada por chuva" : `Remarcada: ${visitNoteLabel(v.skip_note)}`}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

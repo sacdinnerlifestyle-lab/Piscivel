@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Logo, StatusBadge, SignOutButton, Empty, startOfDay, addDays, fmtTime, fmtDate } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/session";
-import { MapPin, Play, LayoutDashboard, CalendarX, CalendarDays } from "lucide-react";
+import { isRainVisit, rainNote } from "@/lib/rain";
+import { MapPin, Play, LayoutDashboard, CalendarX, CalendarDays, CloudRain } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tecnico/")({
   head: () => ({ meta: [{ title: "Minha rota do dia — Piscivel" }, { name: "description", content: "Visitas do dia do técnico." }, { property: "og:title", content: "Minha rota do dia — Piscivel" }, { property: "og:description", content: "Visitas do dia do técnico." }] }),
@@ -40,6 +41,18 @@ function Tecnico() {
     onError: (e) => toast.error(e.message),
   });
 
+  const rain = useMutation({
+    mutationFn: async (v: { id: string; note: string | null }) => {
+      const { error } = await supabase.from("schedules").update({ skip_note: v.note }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: (_result, v) => {
+      toast.success(v.note ? "Visita marcada como não realizada por chuva" : "Marcação de chuva removida");
+      qc.invalidateQueries({ queryKey: ["my-route"] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const done = mine.filter((v) => v.status === "concluida").length;
   return (
     <div className="max-w-lg mx-auto min-h-screen p-5">
@@ -71,7 +84,11 @@ function Tecnico() {
                 <StatusBadge s={v.status} />
               </div>
               {addr && <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`} className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2"><MapPin className="size-3.5" />{addr}</a>}
-              {v.skip_note && <p className="text-xs text-petrol mt-2">Remarcada: {v.skip_note}</p>}
+              {isRainVisit(v.skip_note) ? (
+                <p className="text-xs text-sky font-semibold mt-2 flex items-center gap-1.5"><CloudRain className="size-3.5" />Não realizada por chuva</p>
+              ) : v.skip_note ? (
+                <p className="text-xs text-petrol mt-2">Remarcada: {v.skip_note}</p>
+              ) : null}
               {v.status !== "concluida" && (
                 <>
                   <Link to="/tecnico/visita/$id" params={{ id: v.id }} className="btn-primary w-full py-3 mt-4 flex items-center justify-center gap-2"><Play className="size-4" />{v.status === "em_andamento" ? "Continuar Atendimento" : "Iniciar Atendimento"}</Link>
@@ -86,6 +103,14 @@ function Tecnico() {
                   ) : (
                     <button onClick={() => { setSkipFor(v.id); setNote(""); }} className="w-full mt-2 py-2.5 text-sm text-muted-foreground flex items-center justify-center gap-2"><CalendarX className="size-4" />Não consegui ir hoje</button>
                   )}
+                  <button
+                    onClick={() => rain.mutate({ id: v.id, note: isRainVisit(v.skip_note) ? null : rainNote(new Date()) })}
+                    disabled={rain.isPending}
+                    className={`w-full mt-2 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 border rounded-lg text-sky disabled:opacity-60 ${isRainVisit(v.skip_note) ? "border-sky bg-sky/10" : ""}`}
+                  >
+                    <CloudRain className="size-4" />
+                    {isRainVisit(v.skip_note) ? "Desfazer chuva" : "Chuva"}
+                  </button>
                 </>
               )}
             </div>

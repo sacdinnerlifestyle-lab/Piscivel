@@ -9,6 +9,7 @@ import {
   CircleAlert,
   ClipboardList,
   Clock3,
+  CloudRain,
   Eye,
   Pencil,
   Trash2,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { AdminShell, Empty, StatusBadge, addDays, fmtTime, startOfDay } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
+import { isRainVisit, rainNote } from "@/lib/rain";
 import { localDateKey } from "@/lib/visit-datetime";
 
 const reportPhotoFields = [
@@ -99,6 +101,18 @@ function Visitas() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const markRain = useMutation({
+    mutationFn: async (vars: { id: string; note: string | null }) => {
+      const { error } = await supabase.from("schedules").update({ skip_note: vars.note }).eq("id", vars.id);
+      if (error) throw error;
+    },
+    onSuccess: (_result, vars) => {
+      toast.success(vars.note ? "Visita marcada como não realizada por chuva" : "Marcação de chuva removida");
+      queryClient.invalidateQueries({ queryKey: ["admin-visits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const {
     data: reportView,
     isLoading: reportLoading,
@@ -148,8 +162,9 @@ function Visitas() {
   }, [queryClient]);
 
   const isFinished = (visit: (typeof visits)[number]) => visit.status === "concluida";
+  const isRainy = (visit: (typeof visits)[number]) => isRainVisit(visit.skip_note);
   const isOverdue = (visit: (typeof visits)[number]) =>
-    !isFinished(visit) && new Date(visit.scheduled_at).getTime() < Date.now();
+    !isFinished(visit) && !isRainy(visit) && new Date(visit.scheduled_at).getTime() < Date.now();
 
   const finishedCount = visits.filter(isFinished).length;
   const overdueCount = visits.filter(isOverdue).length;
@@ -298,11 +313,12 @@ function Visitas() {
                   {dayVisits.map((visit) => {
                     const finished = isFinished(visit);
                     const overdue = isOverdue(visit);
+                    const rainy = isRainy(visit);
 
                     return (
                       <article
                         key={visit.id}
-                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-success/10" : "bg-card"}`}
+                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-success/10" : rainy ? "border-sky/50 bg-sky/10" : "bg-card"}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-mono text-xs font-semibold ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
@@ -328,7 +344,13 @@ function Visitas() {
                             Atrasada — não concluída
                           </div>
                         )}
-                        {visit.skip_note && (
+                        {rainy && (
+                          <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-sky">
+                            <CloudRain className="size-3" />
+                            Não realizada por chuva
+                          </div>
+                        )}
+                        {visit.skip_note && !rainy && (
                           <div className="mt-1 text-[11px] text-petrol">Obs.: {visit.skip_note}</div>
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -354,6 +376,18 @@ function Visitas() {
                             <Pencil className="size-3" />
                             Editar
                           </Link>
+                          {!finished && (
+                            <button
+                              type="button"
+                              onClick={() => markRain.mutate({ id: visit.id, note: rainy ? null : rainNote(new Date()) })}
+                              disabled={markRain.isPending}
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-sky transition disabled:opacity-60 ${rainy ? "border-sky bg-sky/10" : "border-sky/40 bg-background hover:bg-sky/10"}`}
+                              title={rainy ? "Desfazer a marcação de chuva" : "Marcar como não realizada por causa da chuva"}
+                            >
+                              <CloudRain className="size-3" />
+                              {rainy ? "Desfazer chuva" : "Chuva"}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {

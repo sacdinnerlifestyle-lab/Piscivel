@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AdminShell, Empty, StatusBadge, fmtDate, fmtTime } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { signedUrl } from "@/lib/session";
+import { visitNoteLabel } from "@/lib/rain";
 import { ArrowLeft, MessageCircle, X, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/tecnico/$id")({
@@ -107,7 +108,7 @@ function TecnicoVisitas() {
                 <div className="flex-1 min-w-48">
                   <div className="font-medium">{v.pool?.client?.name}{v.pool?.name && <span className="text-muted-foreground font-normal"> · {v.pool.name}</span>}</div>
                   <div className="text-xs text-muted-foreground">{fmtDate(v.scheduled_at)}{v.visited_at && ` · visitado às ${fmtTime(v.visited_at)}`}</div>
-                  {v.skip_note && <div className="text-xs text-petrol mt-1">{v.skip_note}</div>}
+                  {v.skip_note && <div className="text-xs text-petrol mt-1">{visitNoteLabel(v.skip_note)}</div>}
                 </div>
                 <StatusBadge s={v.status} />
                 {hasReport && <button disabled={loadingId === v.id} onClick={() => open(v)} className="btn-primary text-sm px-3 py-2 flex items-center gap-2"><MessageCircle className="size-4" />{loadingId === v.id ? "Abrindo…" : "Enviar relatório"}</button>}
