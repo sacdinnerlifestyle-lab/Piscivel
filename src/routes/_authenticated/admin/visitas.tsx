@@ -9,6 +9,7 @@ import {
   CircleAlert,
   ClipboardList,
   Clock3,
+  CloudLightning,
   CloudRain,
   CloudRainWind,
   Download,
@@ -30,6 +31,28 @@ const reportPhotoFields = [
   { key: "photo_machine", label: "Casa de máquinas" },
   { key: "photo_note", label: "Observação" },
 ] as const;
+
+/**
+ * Selo de conclusão da visita. Quando a visita foi marcada por chuva, mostra
+ * "Concluída" com o desenho da chuva (e do trovão na chuva intensa).
+ */
+function VisitStatus({ visit }: { visit: { status: string; skip_note?: string | null } }) {
+  if (!isRainVisit(visit.skip_note)) return <StatusBadge s={visit.status} />;
+  const heavy = isHeavyRainVisit(visit.skip_note);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <StatusBadge s="concluida" />
+      <span
+        className="inline-flex items-center gap-0.5 rounded-full border border-sky/50 bg-sky/10 px-1.5 py-0.5 text-sky"
+        title={heavy ? "Concluída — visita não realizada por chuva intensa" : "Concluída — visita não realizada por chuva"}
+      >
+        <CloudRain className="size-3.5" aria-hidden="true" />
+        {heavy && <CloudLightning className="size-3.5" aria-hidden="true" />}
+        <span className="sr-only">{heavy ? "Chuva intensa" : "Chuva"}</span>
+      </span>
+    </span>
+  );
+}
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return "—";
@@ -123,7 +146,10 @@ function Visitas() {
 
   const markRain = useMutation({
     mutationFn: async (vars: { id: string; note: string | null }) => {
-      const { error } = await supabase.from("schedules").update({ skip_note: vars.note }).eq("id", vars.id);
+      const { error } = await supabase
+        .from("schedules")
+        .update({ skip_note: vars.note, status: vars.note ? "concluida" : "agendada" })
+        .eq("id", vars.id);
       if (error) throw error;
     },
     onSuccess: (_result, vars) => {
@@ -135,7 +161,10 @@ function Visitas() {
 
   const markHeavyRain = useMutation({
     mutationFn: async (vars: { ids: string[]; note: string }) => {
-      const { error } = await supabase.from("schedules").update({ skip_note: vars.note }).in("id", vars.ids);
+      const { error } = await supabase
+        .from("schedules")
+        .update({ skip_note: vars.note, status: "concluida" })
+        .in("id", vars.ids);
       if (error) throw error;
       return vars.ids.length;
     },
@@ -421,13 +450,13 @@ function Visitas() {
                     return (
                       <article
                         key={visit.id}
-                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : finished ? "border-success/40 bg-success/10" : rainy ? "border-sky/50 bg-sky/10" : "bg-card"}`}
+                        className={`min-w-0 rounded-xl border p-3 shadow-sm ${overdue ? "border-destructive/60 bg-destructive/10" : rainy ? "border-sky/50 bg-sky/10" : finished ? "border-success/40 bg-success/10" : "bg-card"}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-mono text-xs font-semibold ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
                             {fmtTime(visit.scheduled_at)}
                           </span>
-                          <StatusBadge s={visit.status} />
+                          <VisitStatus visit={visit} />
                         </div>
                         <div className="mt-2 break-words text-sm font-semibold leading-snug">
                           {visit.pool?.client?.name ?? "Cliente não informado"}
@@ -479,7 +508,7 @@ function Visitas() {
                             <Pencil className="size-3" />
                             Editar
                           </Link>
-                          {!finished && (
+                          {(!finished || rainy) && (
                             <button
                               type="button"
                               onClick={() => {
@@ -614,7 +643,7 @@ function Visitas() {
                     </div>
                     <div>
                       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</div>
-                      <div className="mt-2"><StatusBadge s={selectedVisit.status} /></div>
+                      <div className="mt-2"><VisitStatus visit={selectedVisit} /></div>
                     </div>
                     <div>
                       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agendada para</div>

@@ -43,7 +43,10 @@ function Tecnico() {
 
   const rain = useMutation({
     mutationFn: async (v: { id: string; note: string | null }) => {
-      const { error } = await supabase.from("schedules").update({ skip_note: v.note }).eq("id", v.id);
+      const { error } = await supabase
+        .from("schedules")
+        .update({ skip_note: v.note, status: v.note ? "concluida" : "agendada" })
+        .eq("id", v.id);
       if (error) throw error;
     },
     onSuccess: (_result, v) => {
@@ -89,7 +92,7 @@ function Tecnico() {
               ) : v.skip_note ? (
                 <p className="text-xs text-petrol mt-2">Remarcada: {v.skip_note}</p>
               ) : null}
-              {v.status !== "concluida" && (
+              {(v.status !== "concluida" || isRainVisit(v.skip_note)) && (
                 <>
                   <Link to="/tecnico/visita/$id" params={{ id: v.id }} className="btn-primary w-full py-3 mt-4 flex items-center justify-center gap-2"><Play className="size-4" />{v.status === "em_andamento" ? "Continuar Atendimento" : "Iniciar Atendimento"}</Link>
                   {skipFor === v.id ? (
