@@ -1,10 +1,12 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { visitNoteLabel } from "@/lib/rain";
 
 type VisitReportVisit = {
   id: string;
   scheduled_at: string;
   visited_at: string | null;
   status: string;
+  skip_note?: string | null;
   technician?: { full_name: string | null } | null;
   pool?: {
     name: string | null;
@@ -252,5 +254,76 @@ export async function buildVisitReportPdf(visit: VisitReportVisit, report: Repor
   return {
     blob: new Blob([bytes as BlobPart], { type: "application/pdf" }),
     filename: `relatorio-${client}-${pool}-${visit.id.slice(0, 8)}.pdf`,
+  };
+}
+
+/**
+ * Relatório da visita marcada como não realizada por chuva.
+ * Traz apenas a identificação da visita e a informação da chuva —
+ * sem parâmetros da água, produtos, serviços ou fotos.
+ */
+export async function buildRainReportPdf(visit: VisitReportVisit) {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const W = 842;
+  const H = 595;
+  const M = 32;
+  const colors = {
+    navy: rgb(0.04, 0.18, 0.3),
+    sky: rgb(0.16, 0.5, 0.78),
+    ink: rgb(0.08, 0.12, 0.18),
+    muted: rgb(0.38, 0.43, 0.5),
+    light: rgb(0.96, 0.98, 1),
+    border: rgb(0.82, 0.87, 0.92),
+    rain: rgb(0.93, 0.97, 1),
+  };
+  const page = pdf.addPage([W, H]);
+
+  page.drawRectangle({ x: 0, y: H - 64, width: W, height: 64, color: colors.navy });
+  page.drawText("PISCIVEL", { x: M, y: H - 27, size: 18, font: bold, color: rgb(1, 1, 1), characterSpacing: 1.2 });
+  page.drawText("RELATÓRIO DA VISITA", { x: M, y: H - 47, size: 8, font, color: rgb(0.78, 0.9, 0.96), characterSpacing: 0.8 });
+  page.drawText("NÃO REALIZADA POR CHUVA", { x: W - M - 175, y: H - 27, size: 7.5, font: bold, color: rgb(1, 0.68, 0.68), characterSpacing: 0.35 });
+  page.drawText(`ID ${safe(visit.id.slice(0, 8)).toUpperCase()}`, { x: W - M - 175, y: H - 47, size: 7, font, color: rgb(0.78, 0.9, 0.96) });
+
+  const metaY = 459;
+  const metaH = 52;
+  drawCard(page, M, metaY, W - M * 2, metaH, colors.light, colors.border);
+  const col = (W - M * 2 - 40) / 3;
+  drawField(page, "Cliente", visit.pool?.client?.name ?? "Não informado", M + 14, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
+  drawField(page, "Piscina", visit.pool?.name ?? "Piscina sem nome", M + 14 + col + 20, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
+  drawField(page, "Técnico", visit.technician?.full_name ?? "Não informado", M + 14 + (col + 20) * 2, metaY + metaH - 10, col, font, bold, { label: colors.muted, text: colors.ink });
+
+  const cardY = 210;
+  const cardH = 220;
+  drawCard(page, M, cardY, W - M * 2, cardH, colors.rain, colors.border);
+  drawSectionTitle(page, "Visita não realizada por chuva", M + 16, cardY + cardH - 26, bold, colors.sky);
+  drawWrapped(
+    page,
+    "A visita não foi realizada porque estava chovendo no momento do atendimento. Por isso não houve coleta de parâmetros da água, aplicação de produtos, serviços executados nem fotos.",
+    { x: M + 16, top: cardY + cardH - 46, width: W - M * 2 - 32, font, size: 11, color: colors.ink, lineGap: 4 },
+  );
+  const rainNoteText = visit.skip_note ? visitNoteLabel(visit.skip_note) : "";
+  drawField(
+    page,
+    "Registro da chuva",
+    rainNoteText || `Visita agendada para ${dateTime(visit.scheduled_at)}`,
+    M + 16,
+    cardY + 100,
+    W - M * 2 - 32,
+    font,
+    bold,
+    { label: colors.muted, text: colors.ink },
+  );
+
+  page.drawText("Documento gerado pelo sistema Piscivel", { x: M, y: 16, size: 6.5, font, color: colors.muted });
+  page.drawText("Visita não realizada por chuva", { x: W - M - 145, y: 16, size: 6.5, font, color: colors.muted });
+
+  const bytes = await pdf.save();
+  const client = safe(visit.pool?.client?.name ?? "cliente").replace(/\s+/g, "-").toLowerCase();
+  const pool = safe(visit.pool?.name ?? "piscina").replace(/\s+/g, "-").toLowerCase();
+  return {
+    blob: new Blob([bytes as BlobPart], { type: "application/pdf" }),
+    filename: `relatorio-chuva-${client}-${pool}-${visit.id.slice(0, 8)}.pdf`,
   };
 }

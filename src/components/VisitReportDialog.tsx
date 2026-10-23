@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Empty, StatusBadge } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { buildVisitReportPdf } from "@/lib/visit-report";
+import { buildRainReportPdf, buildVisitReportPdf } from "@/lib/visit-report";
 import { downloadBlob } from "@/lib/daily-report";
 import { isRainVisit, visitNoteLabel } from "@/lib/rain";
 
@@ -103,11 +103,16 @@ export function VisitReportDialog({ visit, onClose }: { visit: VisitReportVisit;
     ? photoFields.filter(({ key }) => Boolean(data.photoUrls[key]))
     : [];
 
+  const rainy = isRainVisit(visit.skip_note);
+  const canDownload = Boolean(report && data) || (rainy && !report);
+
   const handleDownload = async () => {
-    if (!report || !data) return;
+    if (!report && !rainy) return;
     setDownloading(true);
     try {
-      const file = await buildVisitReportPdf(visit, report, data.photoUrls);
+      const file = report && data
+        ? await buildVisitReportPdf(visit, report, data.photoUrls)
+        : await buildRainReportPdf(visit);
       downloadBlob(file.blob, file.filename);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
@@ -128,7 +133,7 @@ export function VisitReportDialog({ visit, onClose }: { visit: VisitReportVisit;
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {report && <Button type="button" onClick={handleDownload} disabled={downloading} className="flex items-center gap-2 text-xs sm:text-sm"><Download className="size-4" />{downloading ? "Gerando PDF…" : "Baixar PDF"}</Button>}
+            {canDownload && <Button type="button" onClick={handleDownload} disabled={downloading} className="flex items-center gap-2 text-xs sm:text-sm"><Download className="size-4" />{downloading ? "Gerando PDF…" : "Baixar PDF"}</Button>}
             <button type="button" onClick={onClose} className="rounded-lg p-2 text-muted-foreground transition hover:bg-secondary hover:text-foreground" aria-label="Fechar relatório"><X className="size-5" /></button>
           </div>
         </div>
@@ -140,6 +145,7 @@ export function VisitReportDialog({ visit, onClose }: { visit: VisitReportVisit;
             <div className="rounded-xl border border-sky/50 bg-sky/10 p-4">
               <div className="flex items-center gap-2 font-semibold text-foreground"><CloudRain className="size-4 text-sky" />Visita não realizada por chuva</div>
               <p className="mt-2 text-sm text-muted-foreground">A visita foi cancelada porque estava chovendo no momento do atendimento. Por isso não houve coleta de parâmetros, aplicação de produtos nem fotos.</p>
+              <p className="mt-2 text-sm text-muted-foreground">O relatório em PDF desta visita já pode ser baixado: ele traz apenas o registro de que a visita não foi realizada por chuva.</p>
               {visit.skip_note && <p className="mt-2 text-xs text-muted-foreground">{visitNoteLabel(visit.skip_note)}</p>}
             </div>
           ) : <Empty>Esta visita ainda não possui um relatório preenchido.</Empty>)}

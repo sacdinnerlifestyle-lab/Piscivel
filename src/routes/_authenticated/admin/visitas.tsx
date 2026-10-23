@@ -11,6 +11,7 @@ import {
   Clock3,
   CloudRain,
   CloudRainWind,
+  Download,
   Eye,
   Pencil,
   Trash2,
@@ -18,8 +19,10 @@ import {
 } from "lucide-react";
 import { AdminShell, Empty, StatusBadge, addDays, fmtTime, startOfDay } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { heavyRainNote, isHeavyRainVisit, isRainVisit, rainNote } from "@/lib/rain";
+import { heavyRainNote, isHeavyRainVisit, isRainVisit, rainNote, visitNoteLabel } from "@/lib/rain";
 import { localDateKey } from "@/lib/visit-datetime";
+import { buildRainReportPdf } from "@/lib/visit-report";
+import { downloadBlob } from "@/lib/daily-report";
 
 const reportPhotoFields = [
   { key: "photo_before", label: "Antes" },
@@ -88,6 +91,7 @@ function Visitas() {
   });
 
   const [selectedVisit, setSelectedVisit] = useState<(typeof visits)[number] | null>(null);
+  const [downloadingRain, setDownloadingRain] = useState(false);
 
   const removeVisit = useMutation({
     mutationFn: async (id: string) => {
@@ -213,6 +217,19 @@ function Visitas() {
   const reportPhotos = reportView?.report
     ? reportPhotoFields.filter(({ key }) => Boolean(reportView.photoUrls[key]))
     : [];
+
+  const downloadRainReport = async () => {
+    if (!selectedVisit) return;
+    setDownloadingRain(true);
+    try {
+      const file = await buildRainReportPdf(selectedVisit);
+      downloadBlob(file.blob, file.filename);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível gerar o PDF.");
+    } finally {
+      setDownloadingRain(false);
+    }
+  };
 
   const stats = [
     { label: "Visitas na semana", value: visits.length, icon: ClipboardList, tone: "text-sky" },
@@ -493,7 +510,32 @@ function Visitas() {
               {reportLoading && <Empty>Carregando relatório…</Empty>}
               {reportIsError && <Empty>Não foi possível carregar o relatório desta visita.</Empty>}
               {!reportLoading && !reportIsError && !report && (
-                <Empty>Esta visita ainda não possui um relatório preenchido.</Empty>
+                selectedVisit.skip_note && isRainVisit(selectedVisit.skip_note) ? (
+                  <div className="rounded-xl border border-sky/50 bg-sky/10 p-4">
+                    <div className="flex items-center gap-2 font-semibold text-foreground">
+                      <CloudRain className="size-4 text-sky" />
+                      Visita não realizada por chuva
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      A visita não foi realizada porque estava chovendo no momento do atendimento. Por isso não houve coleta de parâmetros, aplicação de produtos, serviços executados nem fotos.
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      O relatório em PDF desta visita traz apenas o registro de que ela não foi realizada por chuva.
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">{visitNoteLabel(selectedVisit.skip_note)}</p>
+                    <button
+                      type="button"
+                      onClick={downloadRainReport}
+                      disabled={downloadingRain}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-sky/50 bg-background px-3 py-2 text-xs font-semibold text-sky transition hover:bg-sky/10 disabled:opacity-60"
+                    >
+                      <Download className="size-3.5" />
+                      {downloadingRain ? "Gerando PDF…" : "Baixar PDF"}
+                    </button>
+                  </div>
+                ) : (
+                  <Empty>Esta visita ainda não possui um relatório preenchido.</Empty>
+                )
               )}
 
               {!reportLoading && !reportIsError && report && (
