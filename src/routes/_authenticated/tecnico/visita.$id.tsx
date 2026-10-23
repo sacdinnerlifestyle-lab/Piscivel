@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { params, inRange, chems, chemUnit, tasks, type ParamKey } from "@/lib/mock";
 import { meQuery } from "@/lib/session";
 import { techsQuery } from "@/lib/queries";
-import { ArrowLeft, Camera, Check } from "lucide-react";
+import { ArrowLeft, Camera, Check, RotateCcw } from "lucide-react";
 import { localDateKey, visitTimestamp } from "@/lib/visit-datetime";
 import { Button } from "@/components/ui/button";
 
@@ -84,6 +84,7 @@ function Visita() {
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [visitTime, setVisitTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [visitDate, setVisitDate] = useState(localDateKey);
   const [datePrefilled, setDatePrefilled] = useState(false);
@@ -201,6 +202,52 @@ function Visita() {
     } finally { setSaving(false); }
   }
 
+  async function resetReport() {
+    if (!isManager) return;
+    if (
+      !confirm(
+        "Resetar o relatório desta visita do zero?\n\nSerão apagados os parâmetros da água, produtos aplicados, serviços, observações e fotos. A visita volta a ficar pendente, como se o relatório não tivesse sido feito.",
+      )
+    )
+      return;
+    setResetting(true);
+    try {
+      const { error: reportError } = await supabase.from("visit_reports").delete().eq("schedule_id", id);
+      if (reportError) throw reportError;
+
+      const { error: scheduleError } = await supabase
+        .from("schedules")
+        .update({ status: "em_andamento", visited_at: null })
+        .eq("id", id);
+      if (scheduleError) throw scheduleError;
+
+      try {
+        const { data: objects } = await supabase.storage.from("visit-photos").list(id);
+        if (objects?.length) {
+          await supabase.storage.from("visit-photos").remove(objects.map((object) => `${id}/${object.name}`));
+        }
+      } catch {
+        // pasta vazia ou sem permissão: o relatório já foi apagado
+      }
+
+      setVals({});
+      setUsed({});
+      setDone([]);
+      setNotes("");
+      setFiles({});
+      setReportPrefilled(true);
+      qc.setQueryData(["schedule-report", id], null);
+      await qc.invalidateQueries({ queryKey: ["schedule-report", id] });
+      await qc.invalidateQueries({ queryKey: ["schedule", id] });
+      await qc.invalidateQueries({ queryKey: ["admin-visits"] });
+      toast.success("Relatório resetado do zero. A visita voltou a ficar pendente.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível resetar o relatório");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   const notePreview = files.nota ? URL.createObjectURL(files.nota) : photoUrls.photo_note;
   const card = "glass p-5 space-y-3";
   return (
@@ -210,7 +257,19 @@ function Visita() {
 
       {existing && (
         <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs font-medium text-primary">
-          Esta visita já tem relatório. As informações preenchidas estão carregadas abaixo e podem ser alteradas.
+          <p>Esta visita já tem relatório. As informações preenchidas estão carregadas abaixo e podem ser alteradas.</p>
+          {isManager && (
+            <button
+              type="button"
+              onClick={resetReport}
+              disabled={resetting || saving}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-60 sm:w-auto"
+              title="Apagar todo o preenchimento e deixar a visita como não realizada"
+            >
+              <RotateCcw className="size-3.5" />
+              {resetting ? "Resetando…" : "Resetar relatório do zero"}
+            </button>
+          )}
         </div>
       )}
 
