@@ -57,6 +57,14 @@ function shortDate(date: Date) {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function timeKey(date: Date) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
 export const Route = createFileRoute("/_authenticated/admin/visitas")({
   head: () => ({
     meta: [
@@ -92,6 +100,13 @@ function Visitas() {
 
   const [selectedVisit, setSelectedVisit] = useState<(typeof visits)[number] | null>(null);
   const [downloadingRain, setDownloadingRain] = useState(false);
+  const [rainForm, setRainForm] = useState<{
+    scope: "visit" | "day";
+    ids: string[];
+    title: string;
+    day: string;
+    time: string;
+  } | null>(null);
 
   const removeVisit = useMutation({
     mutationFn: async (id: string) => {
@@ -231,6 +246,36 @@ function Visitas() {
     }
   };
 
+  const confirmRain = () => {
+    if (!rainForm) return;
+    if (!rainForm.day) {
+      toast.error("Informe a data.");
+      return;
+    }
+
+    if (rainForm.scope === "visit") {
+      if (!rainForm.time) {
+        toast.error("Informe o horário.");
+        return;
+      }
+      const when = new Date(`${rainForm.day}T${rainForm.time}:00`);
+      if (!Number.isFinite(when.getTime())) {
+        toast.error("Informe uma data e um horário válidos.");
+        return;
+      }
+      markRain.mutate({ id: rainForm.ids[0], note: rainNote(when) });
+    } else {
+      const when = new Date(`${rainForm.day}T12:00:00`);
+      if (!Number.isFinite(when.getTime())) {
+        toast.error("Informe uma data válida.");
+        return;
+      }
+      markHeavyRain.mutate({ ids: rainForm.ids, note: heavyRainNote(when) });
+    }
+
+    setRainForm(null);
+  };
+
   const stats = [
     { label: "Visitas na semana", value: visits.length, icon: ClipboardList, tone: "text-sky" },
     { label: "Feitas", value: finishedCount, icon: CheckCircle2, tone: "text-success" },
@@ -341,16 +386,15 @@ function Visitas() {
                   {dayOpen.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => {
-                        const label = day.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-                        if (
-                          confirm(
-                            `Marcar ${dayOpen.length} visita${dayOpen.length === 1 ? "" : "s"} do dia ${label} como não realizada${dayOpen.length === 1 ? "" : "s"} por chuva intensa?`,
-                          )
-                        ) {
-                          markHeavyRain.mutate({ ids: dayOpen.map((visit) => visit.id), note: heavyRainNote(new Date()) });
-                        }
-                      }}
+                      onClick={() =>
+                        setRainForm({
+                          scope: "day",
+                          ids: dayOpen.map((visit) => visit.id),
+                          title: `${dayOpen.length} visita${dayOpen.length === 1 ? "" : "s"} em ${day.toLocaleDateString("pt-BR")}`,
+                          day: localDateKey(day),
+                          time: "",
+                        })
+                      }
                       disabled={markHeavyRain.isPending}
                       className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-sky/40 bg-background px-2 py-1.5 text-[11px] font-semibold text-sky transition hover:bg-sky/10 disabled:opacity-60"
                       title="Marcar todas as visitas deste dia como não realizadas por chuva intensa"
@@ -438,7 +482,20 @@ function Visitas() {
                           {!finished && (
                             <button
                               type="button"
-                              onClick={() => markRain.mutate({ id: visit.id, note: rainy ? null : rainNote(new Date()) })}
+                              onClick={() => {
+                                if (rainy) {
+                                  markRain.mutate({ id: visit.id, note: null });
+                                  return;
+                                }
+                                const now = new Date();
+                                setRainForm({
+                                  scope: "visit",
+                                  ids: [visit.id],
+                                  title: visit.pool?.client?.name ?? "Visita",
+                                  day: localDateKey(now),
+                                  time: timeKey(now),
+                                });
+                              }}
                               disabled={markRain.isPending}
                               className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-sky transition disabled:opacity-60 ${rainy ? "border-sky bg-sky/10" : "border-sky/40 bg-background hover:bg-sky/10"}`}
                               title={rainy ? "Desfazer a marcação de chuva" : "Marcar como não realizada por causa da chuva"}
@@ -645,6 +702,74 @@ function Visitas() {
                   </section>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rainForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rain-form-title"
+          onClick={() => setRainForm(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border bg-background p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="rain-form-title" className="text-lg font-bold text-foreground">
+              {rainForm.scope === "day" ? "Chuva intensa" : "Registrar chuva"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">{rainForm.title}</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm font-medium">
+                Data
+                <input
+                  type="date"
+                  required
+                  value={rainForm.day}
+                  onChange={(event) => setRainForm({ ...rainForm, day: event.target.value })}
+                  className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 ring-ring"
+                />
+              </label>
+
+              {rainForm.scope === "visit" ? (
+                <label className="block text-sm font-medium">
+                  Horário
+                  <input
+                    type="time"
+                    required
+                    value={rainForm.time}
+                    onChange={(event) => setRainForm({ ...rainForm, time: event.target.value })}
+                    className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 ring-ring"
+                  />
+                </label>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  A chuva intensa é registrada apenas com o dia — o relatório não mostra horário.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRainForm(null)}
+                className="rounded-lg border bg-background px-3 py-2 text-sm font-semibold transition hover:bg-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmRain}
+                disabled={markRain.isPending || markHeavyRain.isPending}
+                className="rounded-lg border border-sky/50 bg-sky/10 px-3 py-2 text-sm font-semibold text-sky transition hover:bg-sky/20 disabled:opacity-60"
+              >
+                {markRain.isPending || markHeavyRain.isPending ? "Salvando…" : "Confirmar"}
+              </button>
             </div>
           </div>
         </div>
