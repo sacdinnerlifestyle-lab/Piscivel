@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Clock3,
   CloudRain,
+  CloudRainWind,
   Eye,
   Pencil,
   Trash2,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 import { AdminShell, Empty, StatusBadge, addDays, fmtTime, startOfDay } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { isRainVisit, rainNote } from "@/lib/rain";
+import { heavyRainNote, isHeavyRainVisit, isRainVisit, rainNote } from "@/lib/rain";
 import { localDateKey } from "@/lib/visit-datetime";
 
 const reportPhotoFields = [
@@ -109,6 +110,24 @@ function Visitas() {
     onSuccess: (_result, vars) => {
       toast.success(vars.note ? "Visita marcada como não realizada por chuva" : "Marcação de chuva removida");
       queryClient.invalidateQueries({ queryKey: ["admin-visits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const markHeavyRain = useMutation({
+    mutationFn: async (vars: { ids: string[]; note: string }) => {
+      const { error } = await supabase.from("schedules").update({ skip_note: vars.note }).in("id", vars.ids);
+      if (error) throw error;
+      return vars.ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(
+        count > 1
+          ? `${count} visitas do dia marcadas como não realizadas por chuva intensa`
+          : "Visita marcada como não realizada por chuva intensa",
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-visits"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -279,6 +298,7 @@ function Visitas() {
             const key = localDateKey(day);
             const dayVisits = visits.filter((visit) => localDateKey(new Date(visit.scheduled_at)) === key);
             const dayOverdue = dayVisits.filter(isOverdue).length;
+            const dayOpen = dayVisits.filter((visit) => !isFinished(visit) && !isRainy(visit));
             const isToday = key === todayKey;
 
             return (
@@ -301,6 +321,27 @@ function Visitas() {
                       </span>
                     )}
                   </div>
+                  {dayOpen.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const label = day.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                        if (
+                          confirm(
+                            `Marcar ${dayOpen.length} visita${dayOpen.length === 1 ? "" : "s"} do dia ${label} como não realizada${dayOpen.length === 1 ? "" : "s"} por chuva intensa?`,
+                          )
+                        ) {
+                          markHeavyRain.mutate({ ids: dayOpen.map((visit) => visit.id), note: heavyRainNote(new Date()) });
+                        }
+                      }}
+                      disabled={markHeavyRain.isPending}
+                      className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-sky/40 bg-background px-2 py-1.5 text-[11px] font-semibold text-sky transition hover:bg-sky/10 disabled:opacity-60"
+                      title="Marcar todas as visitas deste dia como não realizadas por chuva intensa"
+                    >
+                      <CloudRainWind className="size-3" />
+                      Chuva intensa
+                    </button>
+                  )}
                 </header>
 
                 <div className="space-y-2">
@@ -314,6 +355,7 @@ function Visitas() {
                     const finished = isFinished(visit);
                     const overdue = isOverdue(visit);
                     const rainy = isRainy(visit);
+                    const heavyRain = isHeavyRainVisit(visit.skip_note);
 
                     return (
                       <article
@@ -347,7 +389,7 @@ function Visitas() {
                         {rainy && (
                           <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-sky">
                             <CloudRain className="size-3" />
-                            Não realizada por chuva
+                            {heavyRain ? "Não realizada por chuva intensa" : "Não realizada por chuva"}
                           </div>
                         )}
                         {visit.skip_note && !rainy && (
