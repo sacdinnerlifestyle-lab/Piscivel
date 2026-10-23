@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
+import { emailToLogin, isEmailLogin, isValidLogin, loginToEmail } from "@/lib/login";
 import { homeFor, meQuery } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -43,17 +44,21 @@ function Login() {
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const email = String(f.get("email")).trim();
+    const ident = String(f.get("login") ?? "").trim();
     const password = String(f.get("password") ?? "");
     setBusy(true); setMsg(null);
     try {
       if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+        if (!isEmailLogin(ident)) {
+          throw new Error("Para recuperar a senha informe seu e-mail. Quem entra com nome de usuário deve pedir a redefinição ao gestor.");
+        }
+        const { error } = await supabase.auth.resetPasswordForEmail(ident, { redirectTo: `${window.location.origin}/reset-password` });
         if (error) throw error;
         setMsg("Enviamos um link de recuperação para seu e-mail.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw new Error("E-mail ou senha incorretos.");
+        if (!isValidLogin(ident)) throw new Error("Informe um e-mail válido ou um nome de usuário.");
+        const { error } = await supabase.auth.signInWithPassword({ email: loginToEmail(ident), password });
+        if (error) throw new Error("E-mail/usuário ou senha incorretos.");
         await go();
       }
     } catch (err) {
@@ -71,7 +76,17 @@ function Login() {
           {mode === "forgot" ? "Enviaremos um link para seu e-mail." : "Clientes, técnicos e gestores entram por aqui."}
         </p>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          <input name="email" type="email" required maxLength={255} placeholder="E-mail" autoComplete="email" className={inp} />
+          <input
+            name="login"
+            type="text"
+            required
+            maxLength={255}
+            placeholder={mode === "forgot" ? "E-mail" : "E-mail ou nome de usuário"}
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            className={inp}
+          />
           {mode !== "forgot" && <input name="password" type="password" required minLength={1} placeholder="Senha" autoComplete="current-password" className={inp} />}
           {mode === "login" && (
             <div className="flex justify-between text-sm">
@@ -91,4 +106,9 @@ function Login() {
       </div>
     </div>
   );
+}
+
+// Mantido para exibição amigável do login do usuário logado.
+export function displayLogin(email?: string | null) {
+  return emailToLogin(email);
 }

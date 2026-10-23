@@ -7,6 +7,7 @@ import { z } from "zod";
 import { AdminShell, Empty, inputCls } from "@/components/Shell";
 import { PoolFields, usePoolDims, poolLabel } from "@/components/PoolFields";
 import { supabase } from "@/integrations/supabase/client";
+import { emailToLogin, isValidLogin } from "@/lib/login";
 import { createAccount, updateAccount } from "@/lib/users.functions";
 import { MapPin, Phone, Plus, KeyRound, Waves, Trash2, Pencil } from "lucide-react";
 
@@ -27,6 +28,8 @@ const poolSchema = z.object({
 });
 
 type PoolInput = { client_id: string; name: string | null; address: string | null; coating: string; dimensions: string | null; volume_m3: number; payment_day: number | null; monthly_fee: number | null };
+
+const loginHint = "Pode ser um nome de usuário (ex: joao.silva), sem precisar de e-mail.";
 
 function Clientes() {
   const qc = useQueryClient();
@@ -207,26 +210,32 @@ function Clientes() {
                       e.preventDefault();
                       if (!login) return;
                       const f = new FormData(e.currentTarget);
+                      const ident = String(f.get("email") ?? "").trim();
                       const password = String(f.get("password") ?? "").trim();
+                      if (!isValidLogin(ident)) { toast.error("Informe um usuário (3 a 40 caracteres, sem espaços) ou um e-mail válido."); return; }
                       if (password && password.length < 8) { toast.error("A senha precisa ter ao menos 8 caracteres."); return; }
-                      updLogin.mutate({ id: login.id, email: String(f.get("email")), ...(password ? { password } : {}) });
+                      updLogin.mutate({ id: login.id, email: ident, ...(password ? { password } : {}) });
                     }}>
-                      <input name="email" type="email" required defaultValue={login.email ?? ""} placeholder="E-mail do cliente" className={inputCls} />
+                      <input name="email" type="text" required minLength={3} maxLength={255} defaultValue={emailToLogin(login.email)} placeholder="Usuário ou e-mail do cliente" autoCapitalize="none" spellCheck={false} className={inputCls} />
                       <input name="password" type="text" minLength={8} placeholder="Nova senha (deixe vazio para manter)" className={inputCls} />
+                      <p className="text-xs text-muted-foreground">{loginHint}</p>
                       <div className="flex gap-2"><button disabled={updLogin.isPending} className="btn-primary px-3 py-2 flex-1">Salvar login</button><button type="button" onClick={() => setEditLoginFor(null)} className="px-3 text-muted-foreground">Cancelar</button></div>
                     </form>
                   ) : login ? (
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-muted-foreground flex items-center gap-2"><KeyRound className="size-3.5" />Login: {login.email}</span>
+                      <span className="text-muted-foreground flex items-center gap-2"><KeyRound className="size-3.5" />Login: {emailToLogin(login.email)}</span>
                       <button onClick={() => setEditLoginFor(c.id)} className="text-primary font-medium flex items-center gap-1"><Pencil className="size-3.5" />Editar login</button>
                     </div>
                   ) : loginFor === c.id ? (
                     <form className="space-y-2" onSubmit={(e) => {
                       e.preventDefault(); const f = new FormData(e.currentTarget);
-                      addLogin.mutate({ email: String(f.get("email")), password: String(f.get("password")), full_name: c.name, client_id: c.id });
+                      const ident = String(f.get("email") ?? "").trim();
+                      if (!isValidLogin(ident)) { toast.error("Informe um usuário (3 a 40 caracteres, sem espaços) ou um e-mail válido."); return; }
+                      addLogin.mutate({ email: ident, password: String(f.get("password")), full_name: c.name, client_id: c.id });
                     }}>
-                      <input name="email" type="email" required placeholder="E-mail do cliente" className={inputCls} />
+                      <input name="email" type="text" required minLength={3} maxLength={255} placeholder="Usuário ou e-mail do cliente" autoCapitalize="none" spellCheck={false} className={inputCls} />
                       <input name="password" type="text" required minLength={8} placeholder="Senha inicial (mín. 8)" className={inputCls} />
+                      <p className="text-xs text-muted-foreground">{loginHint}</p>
                       <div className="flex gap-2"><button disabled={addLogin.isPending} className="btn-primary px-3 py-2 flex-1">Criar login</button><button type="button" onClick={() => setLoginFor(null)} className="px-3 text-muted-foreground">Cancelar</button></div>
                     </form>
                   ) : <button onClick={() => setLoginFor(c.id)} className="text-primary font-medium flex items-center gap-2"><KeyRound className="size-3.5" />Criar login do cliente</button>}
