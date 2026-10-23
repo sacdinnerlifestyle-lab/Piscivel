@@ -7,7 +7,7 @@ import { z } from "zod";
 import { AdminShell, Empty, inputCls } from "@/components/Shell";
 import { PoolFields, usePoolDims, poolLabel } from "@/components/PoolFields";
 import { supabase } from "@/integrations/supabase/client";
-import { createAccount } from "@/lib/users.functions";
+import { createAccount, updateAccount } from "@/lib/users.functions";
 import { MapPin, Phone, Plus, KeyRound, Waves, Trash2, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/clientes")({
@@ -33,9 +33,11 @@ function Clientes() {
   const [open, setOpen] = useState(false);
   const [poolFor, setPoolFor] = useState<string | null>(null);
   const [loginFor, setLoginFor] = useState<string | null>(null);
+  const [editLoginFor, setEditLoginFor] = useState<string | null>(null);
   const newPool = usePoolDims();
   const extraPool = usePoolDims();
   const create = useServerFn(createAccount);
+  const updateAcc = useServerFn(updateAccount);
   const [editClient, setEditClient] = useState<string | null>(null);
   const [editPool, setEditPool] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries();
@@ -90,6 +92,12 @@ function Clientes() {
   const addLogin = useMutation({
     mutationFn: (d: { email: string; password: string; full_name: string; client_id: string }) => create({ data: { ...d, role: "cliente" } }),
     onSuccess: () => { toast.success("Login do cliente criado"); setLoginFor(null); refresh(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updLogin = useMutation({
+    mutationFn: (d: { id: string; email: string; password?: string }) => updateAcc({ data: d }),
+    onSuccess: () => { toast.success("Login do cliente atualizado"); setEditLoginFor(null); refresh(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -194,7 +202,25 @@ function Clientes() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t text-sm">
-                  {login ? <span className="text-muted-foreground flex items-center gap-2"><KeyRound className="size-3.5" />Login: {login.email}</span> : loginFor === c.id ? (
+                  {login && editLoginFor === c.id ? (
+                    <form className="space-y-2" onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!login) return;
+                      const f = new FormData(e.currentTarget);
+                      const password = String(f.get("password") ?? "").trim();
+                      if (password && password.length < 8) { toast.error("A senha precisa ter ao menos 8 caracteres."); return; }
+                      updLogin.mutate({ id: login.id, email: String(f.get("email")), ...(password ? { password } : {}) });
+                    }}>
+                      <input name="email" type="email" required defaultValue={login.email ?? ""} placeholder="E-mail do cliente" className={inputCls} />
+                      <input name="password" type="text" minLength={8} placeholder="Nova senha (deixe vazio para manter)" className={inputCls} />
+                      <div className="flex gap-2"><button disabled={updLogin.isPending} className="btn-primary px-3 py-2 flex-1">Salvar login</button><button type="button" onClick={() => setEditLoginFor(null)} className="px-3 text-muted-foreground">Cancelar</button></div>
+                    </form>
+                  ) : login ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-muted-foreground flex items-center gap-2"><KeyRound className="size-3.5" />Login: {login.email}</span>
+                      <button onClick={() => setEditLoginFor(c.id)} className="text-primary font-medium flex items-center gap-1"><Pencil className="size-3.5" />Editar login</button>
+                    </div>
+                  ) : loginFor === c.id ? (
                     <form className="space-y-2" onSubmit={(e) => {
                       e.preventDefault(); const f = new FormData(e.currentTarget);
                       addLogin.mutate({ email: String(f.get("email")), password: String(f.get("password")), full_name: c.name, client_id: c.id });

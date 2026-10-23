@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -10,6 +11,7 @@ import {
   Clock3,
   Eye,
   Pencil,
+  Trash2,
   X,
 } from "lucide-react";
 import { AdminShell, Empty, StatusBadge, addDays, fmtTime, startOfDay } from "@/components/Shell";
@@ -83,6 +85,19 @@ function Visitas() {
   });
 
   const [selectedVisit, setSelectedVisit] = useState<(typeof visits)[number] | null>(null);
+
+  const removeVisit = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("schedules").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Visita excluída");
+      setSelectedVisit(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-visits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const {
     data: reportView,
@@ -326,16 +341,31 @@ function Visitas() {
                             <Eye className="size-3" />
                             Relatório
                           </button>
-                          {overdue && (
-                            <Link
-                              to="/tecnico/visita/$id"
-                              params={{ id: visit.id }}
-                              className="inline-flex items-center gap-1 rounded-lg bg-destructive px-2 py-1.5 text-[11px] font-semibold text-destructive-foreground transition hover:opacity-90"
-                            >
-                              <Pencil className="size-3" />
-                              Editar
-                            </Link>
-                          )}
+                          <Link
+                            to="/tecnico/visita/$id"
+                            params={{ id: visit.id }}
+                            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition hover:opacity-90 ${
+                              overdue
+                                ? "bg-destructive text-destructive-foreground"
+                                : "border border-primary/30 bg-background text-primary hover:bg-primary/10"
+                            }`}
+                            title="Editar visita"
+                          >
+                            <Pencil className="size-3" />
+                            Editar
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm("Excluir esta visita e o relatório dela?")) removeVisit.mutate(visit.id);
+                            }}
+                            disabled={removeVisit.isPending}
+                            className="inline-flex items-center gap-1 rounded-lg border border-destructive/40 bg-background px-2 py-1.5 text-[11px] font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
+                            title="Excluir visita"
+                          >
+                            <Trash2 className="size-3" />
+                            Excluir
+                          </button>
                         </div>
                       </article>
                     );

@@ -18,6 +18,7 @@ function Agenda() {
   const [open, setOpen] = useState(false);
   const [bulk, setBulk] = useState(false);
   const [weekdays, setWeekdays] = useState<number[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
   const start = startOfDay();
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const { data: team = [] } = useQuery(techsQuery);
@@ -39,7 +40,13 @@ function Agenda() {
   });
   const del = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("schedules").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["agenda"] }),
+    onSuccess: () => { toast.success("Visita removida da agenda"); qc.invalidateQueries({ queryKey: ["agenda"] }); },
+    onError: (e) => toast.error(e.message),
+  });
+  const delMany = useMutation({
+    mutationFn: async (ids: string[]) => { const { error } = await supabase.from("schedules").delete().in("id", ids); if (error) throw error; return ids.length; },
+    onSuccess: (n) => { toast.success(n > 1 ? `${n} visitas removidas da agenda` : "Visita removida da agenda"); setSelected([]); qc.invalidateQueries({ queryKey: ["agenda"] }); },
+    onError: (e) => toast.error(e.message),
   });
 
   const sameDay = (a: Date, s: string) => new Date(s).toDateString() === a.toDateString();
@@ -104,6 +111,23 @@ function Agenda() {
           <button disabled={add.isPending} className="btn-primary py-2.5 w-full">{add.isPending ? "Agendando…" : "Criar visitas"}</button>
         </form>
       )}
+      {selected.length > 0 && (
+        <div className="glass mb-4 flex flex-wrap items-center justify-between gap-3 border-2 border-destructive/30 p-4">
+          <div className="text-sm font-semibold text-destructive">
+            {selected.length} visita{selected.length === 1 ? "" : "s"} selecionada{selected.length === 1 ? "" : "s"}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setSelected([])} className="glass px-3 py-2 text-sm font-medium">Limpar seleção</button>
+            <button
+              onClick={() => { if (confirm(`Remover ${selected.length} visita(s) selecionada(s) da agenda?`)) delMany.mutate(selected); }}
+              disabled={delMany.isPending}
+              className="bg-destructive text-destructive-foreground px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
+            >
+              <Trash2 className="size-4" />Remover da agenda
+            </button>
+          </div>
+        </div>
+      )}
       {techs.length === 0 ? <p className="text-sm text-muted-foreground">Cadastre técnicos na aba Equipe para montar a agenda.</p> : (
         <div className="glass p-4 overflow-x-auto">
           <div className="grid min-w-[900px]" style={{ gridTemplateColumns: `160px repeat(${days.length}, 1fr)` }}>
@@ -115,9 +139,19 @@ function Agenda() {
                 {days.map((d, i) => (
                   <div key={i} className="border-t p-1.5 space-y-1.5 min-h-20">
                     {sched.filter((s) => s.technician_id === t.id && sameDay(d, s.scheduled_at)).map((v) => (
-                      <div key={v.id} className={`rounded-lg p-2 text-xs border group ${v.status === "concluida" ? "border-success/40 bg-success/10" : "bg-ice"}`}>
-                        <div className="font-semibold flex justify-between gap-1">{v.visited_at ? `${fmtTime(v.visited_at)} · ` : ""}{v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}
-                          {v.status === "agendada" && <button onClick={() => del.mutate(v.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground" aria-label="Remover"><Trash2 className="size-3" /></button>}
+                      <div key={v.id} className={`rounded-lg p-2 text-xs border ${selected.includes(v.id) ? "ring-2 ring-destructive/50 " : ""}${v.status === "concluida" ? "border-success/40 bg-success/10" : "bg-ice"}`}>
+                        <div className="font-semibold flex items-start justify-between gap-1">
+                          <label className="flex items-start gap-1.5 min-w-0">
+                            <input
+                              type="checkbox"
+                              className="accent-destructive mt-0.5 shrink-0"
+                              checked={selected.includes(v.id)}
+                              onChange={(event) => setSelected(event.target.checked ? [...selected, v.id] : selected.filter((x) => x !== v.id))}
+                              aria-label="Selecionar visita"
+                            />
+                            <span className="min-w-0 break-words">{v.visited_at ? `${fmtTime(v.visited_at)} · ` : ""}{v.pool?.client?.name}{v.pool?.name ? ` (${v.pool.name})` : ""}</span>
+                          </label>
+                          <button onClick={() => { if (confirm("Remover esta visita da agenda?")) del.mutate(v.id); }} className="shrink-0 text-muted-foreground opacity-60 hover:opacity-100 hover:text-destructive" aria-label="Remover visita"><Trash2 className="size-3" /></button>
                         </div>
                         <div className="mt-1"><StatusBadge s={v.status} /></div>
                         {v.skip_note && <div className="mt-1 text-[11px] text-petrol">Remarcada: {v.skip_note}</div>}
