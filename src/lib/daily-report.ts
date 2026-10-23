@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 import { supabase } from "@/integrations/supabase/client";
 import { params, inRange, type ParamKey } from "@/lib/mock";
 import { filterReportVisits } from "@/lib/daily-report-filter";
+import { isRainVisit, visitNoteLabel } from "@/lib/rain";
 
 const safe = (value: string) => value.replace(/[^\x20-\x7E\u00A0-\u00FF–—•]/g, "");
 const clean = (value: string) => safe(value).replace(/\s+/g, " ").trim();
@@ -150,7 +151,8 @@ export async function buildDailyReport(techId: string, techName: string, day: st
     const pool = visit.pool;
     const report = visit.report;
     const finished = visit.status === "concluida" && Boolean(report);
-    const statusText = finished ? "VISITA CONCLUÍDA" : "VISITA NÃO REALIZADA";
+    const rainy = isRainVisit(visit.skip_note);
+    const statusText = finished ? "VISITA CONCLUÍDA" : rainy ? "NÃO REALIZADA POR CHUVA" : "VISITA NÃO REALIZADA";
     const statusColor = finished ? colors.success : colors.danger;
 
     page.drawRectangle({ x: 0, y: H - 64, width: W, height: 64, color: colors.navy });
@@ -200,9 +202,13 @@ export async function buildDailyReport(techId: string, techName: string, day: st
         page.drawText(safe(value == null ? "—" : `${value} ${parameter.unit}`), { x, y: top - 15, size: 10, font: bold, color: colors.ink });
         if (rangeText) page.drawText(safe(rangeText), { x, y: top - 27, size: 6.4, font: bold, color: rangeColor });
       });
+    } else if (rainy) {
+      page.drawText("VISITA NÃO REALIZADA POR CHUVA", { x: M + 14, y: bodyY + bodyH - 52, size: 9, font: bold, color: statusColor });
+      drawWrapped(page, "Não houve coleta de parâmetros da água porque a visita foi cancelada pela chuva no momento do atendimento.", { x: M + 14, top: bodyY + bodyH - 72, width: leftW - 28, font, size: 8.5, color: colors.ink, lineGap: 2 });
+      if (visit.skip_note) drawWrapped(page, visitNoteLabel(visit.skip_note), { x: M + 14, top: bodyY + bodyH - 118, width: leftW - 28, font, size: 8, color: colors.muted, lineGap: 2 });
     } else {
       page.drawText("Não há relatório preenchido para esta visita.", { x: M + 14, y: bodyY + bodyH - 52, size: 9, font: bold, color: statusColor });
-      if (visit.skip_note) drawWrapped(page, `Motivo: ${visit.skip_note}`, { x: M + 14, top: bodyY + bodyH - 74, width: leftW - 28, font, size: 8.5, color: colors.muted, lineGap: 2 });
+      if (visit.skip_note) drawWrapped(page, `Motivo: ${visitNoteLabel(visit.skip_note)}`, { x: M + 14, top: bodyY + bodyH - 74, width: leftW - 28, font, size: 8.5, color: colors.muted, lineGap: 2 });
     }
 
     drawSectionTitle(page, finished ? "Produtos, serviços e observações" : "Informações da visita", rightX + 14, bodyY + bodyH - 20, bold, colors.blue);
@@ -219,7 +225,10 @@ export async function buildDailyReport(techId: string, techName: string, day: st
       drawWrapped(page, report.notes?.trim() || "Nenhuma observação registrada.", { x: rightX + 14, top: bodyY + 45, width: rightW - 28, font, size: 7.4, color: colors.ink, lineGap: 2 });
     } else {
       drawField(page, "Status", statusText, rightX + 14, bodyY + bodyH - 43, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
-      if (visit.skip_note) drawField(page, "Observação", visit.skip_note, rightX + 14, bodyY + bodyH - 82, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
+      if (rainy) {
+        drawWrapped(page, "Visita cancelada pela chuva no momento do atendimento. Sem tratamento e sem fotos registradas neste dia.", { x: rightX + 14, top: bodyY + bodyH - 84, width: rightW - 28, font, size: 8, color: colors.ink, lineGap: 2 });
+      }
+      if (visit.skip_note) drawField(page, rainy ? "Registro da chuva" : "Observação", visitNoteLabel(visit.skip_note), rightX + 14, bodyY + bodyH - 140, rightW - 28, font, bold, { label: colors.muted, text: colors.ink });
     }
 
     const photoLabels = [

@@ -1,18 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Download, X } from "lucide-react";
+import { CloudRain, Download, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Empty, StatusBadge } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { buildVisitReportPdf } from "@/lib/visit-report";
 import { downloadBlob } from "@/lib/daily-report";
+import { isRainVisit, visitNoteLabel } from "@/lib/rain";
 
 type VisitReportVisit = {
   id: string;
   scheduled_at: string;
   visited_at: string | null;
   status: string;
+  skip_note?: string | null;
   technician?: { full_name: string | null } | null;
   pool?: {
     name: string | null;
@@ -134,7 +136,13 @@ export function VisitReportDialog({ visit, onClose }: { visit: VisitReportVisit;
         <div className="overflow-y-auto p-5 sm:p-6">
           {isLoading && <Empty>Carregando relatório…</Empty>}
           {isError && <Empty>Não foi possível carregar o relatório desta visita.</Empty>}
-          {!isLoading && !isError && !report && <Empty>Esta visita ainda não possui um relatório preenchido.</Empty>}
+          {!isLoading && !isError && !report && (isRainVisit(visit.skip_note) ? (
+            <div className="rounded-xl border border-sky/50 bg-sky/10 p-4">
+              <div className="flex items-center gap-2 font-semibold text-foreground"><CloudRain className="size-4 text-sky" />Visita não realizada por chuva</div>
+              <p className="mt-2 text-sm text-muted-foreground">A visita foi cancelada porque estava chovendo no momento do atendimento. Por isso não houve coleta de parâmetros, aplicação de produtos nem fotos.</p>
+              {visit.skip_note && <p className="mt-2 text-xs text-muted-foreground">{visitNoteLabel(visit.skip_note)}</p>}
+            </div>
+          ) : <Empty>Esta visita ainda não possui um relatório preenchido.</Empty>)}
 
           {!isLoading && !isError && report && data && (
             <div className="space-y-6">

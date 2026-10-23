@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { requireRole } from "@/lib/guard";
 import { meQuery, signedUrl } from "@/lib/session";
 import { params, inRange, type ParamKey } from "@/lib/mock";
-import { visitNoteLabel } from "@/lib/rain";
-import { CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { isRainVisit, visitNoteLabel } from "@/lib/rain";
+import { CalendarClock, CheckCircle2, AlertTriangle, CloudRain } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   beforeLoad: ({ context }) => requireRole(context.queryClient, ["cliente"]),
@@ -23,13 +23,14 @@ function Cliente() {
     enabled: !!me?.profile?.client_id,
     queryFn: async () => {
       const cid = me!.profile!.client_id!;
-      const [{ data: client }, { data: next }, { data: reports }] = await Promise.all([
+      const [{ data: client }, { data: next }, { data: reports }, { data: rainy }] = await Promise.all([
         supabase.from("clients").select("name, swimming_pools(id, name, address, coating, volume_m3, dimensions)").eq("id", cid).order("created_at", { referencedTable: "swimming_pools" }).maybeSingle(),
         supabase.from("schedules").select("scheduled_at, pool_id, skip_note").neq("status", "concluida").gte("scheduled_at", new Date().toISOString()).order("scheduled_at"),
         supabase.from("visit_reports").select("*, schedule:schedules(scheduled_at, visited_at, pool_id, technician:profiles(full_name))").order("created_at", { ascending: false }).limit(60),
+        supabase.from("schedules").select("id, scheduled_at, visited_at, skip_note, pool_id").not("skip_note", "is", null).order("scheduled_at", { ascending: false }).limit(40),
       ]);
       const withPhotos = await Promise.all((reports ?? []).map(async (r) => ({ ...r, before: await signedUrl(r.photo_before), after: await signedUrl(r.photo_after), machine: await signedUrl(r.photo_machine) })));
-      return { client, next: next ?? [], reports: withPhotos };
+      return { client, next: next ?? [], reports: withPhotos, rainy: rainy ?? [] };
     },
   });
 
@@ -37,6 +38,7 @@ function Cliente() {
   const [sel, setSel] = useState<string | null>(null);
   const pool = pools.find((p) => p.id === sel) ?? pools[0];
   const reports = (data?.reports ?? []).filter((r) => r.schedule?.pool_id === pool?.id).slice(0, 12);
+  const rainyVisits = (data?.rainy ?? []).filter((r) => r.pool_id === pool?.id && isRainVisit(r.skip_note)).slice(0, 8);
   const nextVisit = (data?.next ?? []).find((n) => n.pool_id === pool?.id);
   const nextAt = nextVisit?.scheduled_at ?? null;
   const last = reports[0];
@@ -65,6 +67,27 @@ function Cliente() {
                 <button key={p.id} onClick={() => setSel(p.id)} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border ${p.id === pool?.id ? "bg-primary text-primary-foreground" : "bg-ice"}`}>{poolLabel(p, i)}</button>
               ))}
             </div>
+          )}
+
+          {rainyVisits.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="font-semibold">Visitas não realizadas por chuva</h2>
+              {rainyVisits.map((visit) => (
+                <div key={visit.id} className="glass border-sky/50 bg-sky/10 p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <CloudRain className="size-4 text-sky" />
+                      {fmtDate(visit.visited_at ?? visit.scheduled_at)}
+                    </div>
+                    <span className="rounded-full bg-sky/20 px-2.5 py-1 text-xs font-semibold text-sky">Não realizada por chuva</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    A visita não foi realizada porque estava chovendo no momento do atendimento. Por isso não houve coleta de parâmetros nem tratamento da água neste dia.
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">{visitNoteLabel(visit.skip_note)}</p>
+                </div>
+              ))}
+            </section>
           )}
 
           {reports.length === 0 ? <Empty>Assim que a primeira visita for concluída, o relatório aparece aqui.</Empty> : (
